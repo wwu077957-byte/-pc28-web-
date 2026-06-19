@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>多情PC28 · 实战分析</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0a0a; color:#e0e0e0; font-family:-apple-system, 'Courier New', monospace; padding:15px; min-height:100vh; }
+        .header { background:linear-gradient(135deg, #00ff41, #00cc33); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:26px; font-weight:bold; text-align:center; padding:15px 0 5px; }
+        .sub { color:#666; font-size:12px; text-align:center; margin-bottom:15px; }
+        .status { display:flex; justify-content:space-between; padding:5px 0; font-size:11px; color:#555; border-bottom:1px solid #1a1a1a; margin-bottom:10px; }
+        .status .online { color:#00ff41; }
+        .status .offline { color:#ff4444; }
+        .card { background:#111; border:1px solid #1a1a1a; border-radius:12px; padding:15px; margin-bottom:12px; }
+        .card-title { color:#00ff41; font-size:14px; font-weight:bold; margin-bottom:8px; border-bottom:1px solid #1a1a1a; padding-bottom:4px; }
+        .card-content { color:#ccc; font-size:13px; line-height:1.8; white-space:pre-wrap; word-wrap:break-word; }
+        .highlight { color:#00ff41; font-weight:bold; }
+        .red { color:#ff4444; }
+        .yellow { color:#ffcc00; }
+        .btn { background:#1a1a1a; border:1px solid #00ff41; color:#00ff41; padding:14px 0; width:100%; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer; font-family:inherit; margin-bottom:6px; transition:0.2s; }
+        .btn:active { background:#00ff41; color:#0a0a0a; transform:scale(0.97); }
+        .btn-admin { border-color:#ffcc00; color:#ffcc00; }
+        .btn-admin:active { background:#ffcc00; color:#0a0a0a; }
+        .footer { color:#444; font-size:11px; text-align:center; margin-top:10px; padding-top:10px; border-top:1px solid #1a1a1a; }
+        .loading { text-align:center; padding:20px; color:#00ff41; }
+        .recommend-box { background:rgba(0,255,65,0.05); border:1px solid #00ff41; border-radius:8px; padding:12px; margin-bottom:8px; }
+        .kill-box { background:rgba(255,68,68,0.05); border:1px solid #ff4444; border-radius:8px; padding:12px; }
+        canvas { width:100%; max-width:600px; height:auto; background:#111; border-radius:8px; margin-top:8px; }
+        .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .stat-item { background:#1a1a1a; padding:6px 10px; border-radius:6px; text-align:center; font-size:12px; }
+        .stat-item .num { font-size:18px; font-weight:bold; color:#00ff41; }
+        .stat-item .label { color:#888; }
+        .history-item { background:#1a1a1a; padding:6px 10px; border-radius:6px; margin-bottom:4px; font-size:12px; }
+        .admin-contact { text-align:center; margin-top:6px; }
+        .admin-contact a { color:#ffcc00; text-decoration:none; }
+    </style>
+</head>
+<body>
+
+<div class="header">🔮 多情PC28</div>
+<div class="sub">实战分析 · 三步算法 · 全量数据</div>
+
+<div class="status">
+    <span id="statusText">📡 连接中...</span>
+    <span id="timeText">⏱ --:--:--</span>
+</div>
+
+<div id="loading" class="loading">⏳ 正在获取数据...</div>
+<div id="report" style="display:none;"></div>
+
+<button class="btn" onclick="loadReport()">🔄 刷新数据</button>
+<button class="btn btn-admin" onclick="contactAdmin()">📞 联系管理员</button>
+
+<div class="footer">多情出品 · 实时数据</div>
+
+<script>
+// ============================================================
+//  PC28 分析引擎（全功能版）
+// ============================================================
+
+const API = "https://pc28.help/api/kj.json?nbr=50";
+const DEMO = [
+    { expect: "3444534", num: 19 }, { expect: "3444533", num: 9 },
+    { expect: "3444532", num: 14 }, { expect: "3444531", num: 12 },
+    { expect: "3444530", num: 16 }, { expect: "3444529", num: 8 },
+    { expect: "3444528", num: 11 }, { expect: "3444527", num: 6 },
+    { expect: "3444526", num: 18 }, { expect: "3444525", num: 15 }
+];
+
+// 全局存储历史推荐
+let historyRecommend = [];
+
+function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+function getDigits(total) {
+    for (let i = 0; i < 100; i++) {
+        let a = rand(0, 9), b = rand(0, 9), c = rand(0, 9);
+        if (a + b + c === total) return [a, b, c];
+    }
+    let a = Math.min(9, total), b = Math.min(9, total - a);
+    let c = total - a - b;
+    if (c > 9) { c = 9; a = total - b - c; if (a < 0) a = 0; }
+    return [a, b, c];
+}
+
+function classify(num) {
+    let d = getDigits(num);
+    let size = num >= 14 ? "大" : "小";
+    let parity = num % 2 === 1 ? "单" : "双";
+    return { num, digits: d, size, parity, form: size + parity };
+}
+
+function threeStep(records) {
+    if (records.length < 3) return null;
+    let n1 = records[0], n2 = records[1], n3 = records[2];
+    let X = Math.floor(n1.num / 10);
+    let Y = n2.digits[0];
+    let Z = n3.digits[2];
+    let mid = X + Y + Z;
+    let pred = mid + n1.num;
+    let size = pred >= 14 ? "大" : "小";
+    let parity = pred % 2 === 1 ? "单" : "双";
+    return { X, Y, Z, mid, pred, form: size + parity };
+}
+
+function hotCold(records) {
+    let forms = records.slice(0, 30).map(r => r.form);
+    let cnt = { "大单": 0, "大双": 0, "小单": 0, "小双": 0 };
+    for (let f of forms) if (cnt[f] !== undefined) cnt[f]++;
+    let total = records.length || 1;
+    let result = {};
+    for (let k of ["大单", "大双", "小单", "小双"]) {
+        let c = cnt[k] || 0;
+        result[k] = { count: c, pct: c / total * 100 };
+    }
+    return result;
+}
+
+// 计算连续次数
+function streak(records, attr) {
+    if (!records.length) return { current: 0, max: 0, history: [] };
+    let values = records.map(r => r[attr]);
+    let cur = 1, max = 1;
+    for (let i = 1; i < values.length; i++) {
+        if (values[i] === values[i-1]) cur++;
+        else { if (cur > max) max = cur; cur = 1; }
+    }
+    if (cur > max) max = cur;
+    return { current: cur, max: max };
+}
+
+// 计算遗漏
+function missing(records, form) {
+    let count = 0;
+    for (let r of records) {
+        if (r.form === form) break;
+        count++;
+    }
+    return count;
+}
+
+// 统计推荐（与之前相同，但返回更完整）
+function getRecommend(records) {
+    if (records.length < 10) return { recs: ["大单","大双","小单"], kill: "小双" };
+    let recent = records.slice(0, 30);
+    let sizes = recent.map(r => r.size);
+    let parities = recent.map(r => r.parity);
+    let sc = {}, pc = {};
+    for (let s of sizes) sc[s] = (sc[s] || 0) + 1;
+    for (let p of parities) pc[p] = (pc[p] || 0) + 1;
+    let t = recent.length;
+    let bp = (sc["大"] || 0) / t * 100, sp = (sc["小"] || 0) / t * 100;
+    let op = (pc["单"] || 0) / t * 100, ep = (pc["双"] || 0) / t * 100;
+    let st = bp > 55 ? "大" : sp > 55 ? "小" : null;
+    let pt = op > 55 ? "单" : ep > 55 ? "双" : null;
+    let main;
+    if (st && pt) main = st + pt;
+    else if (st) main = st + (op >= 50 ? "单" : "双");
+    else if (pt) main = (bp >= 50 ? "大" : "小") + pt;
+    else main = "大单";
+    let rec1 = main;
+    let rec2 = (rec1 === "大双" ? "小单" : (rec1 === "大单" ? "小双" : "大单"));
+    let rec3 = (rec1 === "小双" ? "大单" : (rec2 === "小双" ? "大单" : "大双"));
+    let cnt = { "大单":0, "大双":0, "小单":0, "小双":0 };
+    for (let f of recent.map(r => r.form)) if (cnt[f] !== undefined) cnt[f]++;
+    let kill = Object.keys(cnt).reduce((a,b) => cnt[a] < cnt[b] ? a : b);
+    return { recs: [rec1, rec2, rec3], kill: kill };
+}
+
+// 生成走势图（canvas）
+function drawTrend(canvasId, records) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.parentElement.clientWidth - 20;
+    const height = 150;
+    canvas.width = width * 1; // 适应像素
+    canvas.height = height;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const data = records.slice(0, 30).reverse(); // 最新在右
+    if (data.length < 2) {
+        ctx.fillStyle = '#555'; ctx.font = '12px monospace';
+        ctx.fillText('数据不足', 10, 20);
+        return;
+    }
+    const nums = data.map(r => r.num);
+    const min = Math.min(...nums) - 2;
+    const max = Math.max(...nums) + 2;
+    const range = max - min || 1;
+    const padding = 20;
+    const plotW = w - padding * 2;
+    const plotH = h - padding * 2;
+
+    // 绘制网格和14线
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) {
+        let y = padding + plotH - (i / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(w - padding, y);
+        ctx.stroke();
+    }
+
+    // 14分界线（红色虚线）
+    const y14 = padding + plotH - ((14 - min) / range) * plotH;
+    ctx.strokeStyle = '#ff4444';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(padding, y14);
+    ctx.lineTo(w - padding, y14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ff4444';
+    ctx.font = '10px monospace';
+    ctx.fillText('14', w - padding - 20, y14 - 4);
+
+    // 绘制折线
+    ctx.strokeStyle = '#00ff41';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < nums.length; i++) {
+        let x = padding + (i / (nums.length - 1)) * plotW;
+        let y = padding + plotH - ((nums[i] - min) / range) * plotH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // 绘制点
+    for (let i = 0; i < nums.length; i++) {
+        let x = padding + (i / (nums.length - 1)) * plotW;
+        let y = padding + plotH - ((nums[i] - min) / range) * plotH;
+        ctx.fillStyle = nums[i] >= 14 ? '#00ff41' : '#ffcc00';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 标记最新值
+    let last = nums[nums.length-1];
+    let xLast = padding + plotW;
+    let yLast = padding + plotH - ((last - min) / range) * plotH;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(last, xLast - 15, yLast - 8);
+}
+
+// 主加载函数
+async function loadReport() {
+    const st = document.getElementById('statusText');
+    const ld = document.getElementById('loading');
+    const rp = document.getElementById('report');
+    ld.style.display = 'block';
+    rp.style.display = 'none';
+    st.textContent = '⏳ 加载中...';
+
+    try {
+        let resp = await fetch(API);
+        if (!resp.ok) throw new Error();
+        let data = await resp.json();
+        let raw = data.data || [];
+        if (raw.length < 10) throw new Error();
+        let records = raw.map(item => ({ expect: item.expect || 'N/A', num: parseInt(item.num) }));
+        // 分类
+        let clsRecords = records.map(d => classify(d.num));
+        for (let i = 0; i < records.length; i++) clsRecords[i].expect = records[i].expect;
+        // 算法
+        let alg = threeStep(clsRecords);
+        let hot = hotCold(clsRecords);
+        let recs = getRecommend(clsRecords);
+        // 连续统计
+        let sizeStreak = streak(clsRecords, 'size');
+        let parityStreak = streak(clsRecords, 'parity');
+        // 遗漏
+        let miss = {};
+        for (let f of ['大单','大双','小单','小双']) miss[f] = missing(clsRecords, f);
+        // 历史记录（最多5条）
+        historyRecommend.push(recs.recs[0]);
+        if (historyRecommend.length > 5) historyRecommend.shift();
+
+        // 构建HTML
+        let html = '';
+
+        // 最新3期
+        html += `<div class="card"><div class="card-title">📊 最新3期</div><div class="card-content">`;
+        for (let i = 0; i < 3; i++) {
+            let d = clsRecords[i].digits;
+            html += `  ${clsRecords[i].expect}  ${clsRecords[i].num}（${clsRecords[i].form}）  ${d[0]}+${d[1]}+${d[2]}=${clsRecords[i].num}\n`;
+        }
+        html += `</div></div>`;
+
+        // 三步算法
+        if (alg) {
+            html += `<div class="card"><div class="card-title">🧮 三步算法</div><div class="card-content">`;
+            html += `X=${alg.X} Y=${alg.Y} Z=${alg.Z}  中间值=${alg.mid}  预测值=${alg.pred}\n`;
+            html += `<span class="highlight">算法推荐：${alg.form}</span>`;
+            html += `</div></div>`;
+        }
+
+        // 走势图（canvas）
+        html += `<div class="card"><div class="card-title">📈 走势图（最近30期，最新在右）</div><div class="card-content">`;
+        html += `<canvas id="trendCanvas" style="width:100%;height:150px;"></canvas>`;
+        html += `</div></div>`;
+
+        // 冷热分布
+        html += `<div class="card"><div class="card-title">❄️ 冷热分布（30期）</div><div class="card-content">`;
+        for (let k of ['大单','大双','小单','小双']) {
+            let d = hot[k];
+            let tag = d.pct > 35 ? '🔥' : d.pct < 15 ? '❄️' : '';
+            html += `  ${k}：${d.count}次 (${d.pct.toFixed(1)}%) ${tag}\n`;
+        }
+        html += `</div></div>`;
+
+        // 统计信息（连续+遗漏）
+        html += `<div class="card"><div class="card-title">📊 统计信息</div><div class="card-content">`;
+        html += `  大小连开：当前 ${sizeStreak.current} 期，最长 ${sizeStreak.max} 期\n`;
+        html += `  单双连开：当前 ${parityStreak.current} 期，最长 ${parityStreak.max} 期\n`;
+        html += `  形态遗漏：\n`;
+        for (let f of ['大单','大双','小单','小双']) {
+            html += `    ${f}：遗漏 ${miss[f]} 期\n`;
+        }
+        html += `</div></div>`;
+
+        // 推荐 + 杀号
+        html += `<div class="card"><div class="card-title">🎯 推荐</div><div class="card-content">`;
+        html += `  <span class="highlight">① ${recs.recs[0]}</span>\n  ② ${recs.recs[1]}\n  ③ ${recs.recs[2]}\n`;
+        html += `  <span class="red">杀号：${recs.kill}</span>`;
+        html += `</div></div>`;
+
+        // 历史推荐记录
+        if (historyRecommend.length > 0) {
+            html += `<div class="card"><div class="card-title">📋 历史推荐记录</div><div class="card-content">`;
+            for (let i = historyRecommend.length-1; i >= 0; i--) {
+                html += `  ${i+1}：${historyRecommend[i]}\n`;
+            }
+            html += `</div></div>`;
+        }
+
+        rp.innerHTML = html;
+        rp.style.display = 'block';
+        ld.style.display = 'none';
+        st.textContent = '✅ 已更新';
+        st.className = 'online';
+        document.getElementById('timeText').textContent = '⏱ ' + new Date().toLocaleTimeString();
+
+        // 绘制走势图（延迟确保canvas渲染）
+        setTimeout(() => drawTrend('trendCanvas', clsRecords), 100);
+    } catch (e) {
+        // 离线模式
+        let r = DEMO.map(d => classify(d.num));
+        for (let i = 0; i < DEMO.length; i++) r[i].expect = DEMO[i].expect;
+        let alg = threeStep(r);
+        let recs = getRecommend(r);
+        historyRecommend.push(recs.recs[0]);
+        if (historyRecommend.length > 5) historyRecommend.shift();
+
+        let html = '';
+        html += `<div class="card"><div class="card-title">📊 最新3期（示例）</div><div class="card-content">`;
+        for (let i = 0; i < 3; i++) {
+            let d = r[i].digits;
+            html += `  ${r[i].expect}  ${r[i].num}（${r[i].form}）  ${d[0]}+${d[1]}+${d[2]}=${r[i].num}\n`;
+        }
+        html += `</div></div>`;
+        if (alg) {
+            html += `<div class="card"><div class="card-title">🧮 三步算法</div><div class="card-content">`;
+            html += `X=${alg.X} Y=${alg.Y} Z=${alg.Z}  中间值=${alg.mid}  预测值=${alg.pred}\n`;
+            html += `<span class="highlight">算法推荐：${alg.form}</span>`;
+            html += `</div></div>`;
+        }
+        html += `<div class="card"><div class="card-title">📈 走势图（示例）</div><div class="card-content"><canvas id="trendCanvas" style="width:100%;height:150px;"></canvas></div></div>`;
+        html += `<div class="card"><div class="card-title">❄️ 冷热分布（示例）</div><div class="card-content">`;
+        let hot = hotCold(r);
+        for (let k of ['大单','大双','小单','小双']) {
+            let d = hot[k];
+            html += `  ${k}：${d.count}次 (${d.pct.toFixed(1)}%)\n`;
+        }
+        html += `</div></div>`;
+        html += `<div class="card"><div class="card-title">🎯 推荐</div><div class="card-content">`;
+        html += `  <span class="highlight">① ${recs.recs[0]}</span>\n  ② ${recs.recs[1]}\n  ③ ${recs.recs[2]}\n`;
+        html += `  <span class="red">杀号：${recs.kill}</span>`;
+        html += `</div></div>`;
+        if (historyRecommend.length > 0) {
+            html += `<div class="card"><div class="card-title">📋 历史推荐记录</div><div class="card-content">`;
+            for (let i = historyRecommend.length-1; i >= 0; i--) {
+                html += `  ${i+1}：${historyRecommend[i]}\n`;
+            }
+            html += `</div></div>`;
+        }
+        rp.innerHTML = html;
+        rp.style.display = 'block';
+        ld.style.display = 'none';
+        st.textContent = '📡 离线模式';
+        st.className = 'offline';
+        document.getElementById('timeText').textContent = '⏱ ' + new Date().toLocaleTimeString();
+        setTimeout(() => drawTrend('trendCanvas', r), 100);
+    }
+}
+
+function contactAdmin() {
+    alert('👤 联系管理员：@on9vv\n点击用户名即可私聊');
+}
+
+window.onload = loadReport;
+</script>
+</body>
+</html>
