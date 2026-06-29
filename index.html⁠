@@ -2,1230 +2,1511 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>多情PC28 · 液态预测</title>
-    <!-- Chart.js 用于图表 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- html2canvas 用于截图分享 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PC28 智能预测</title>
     <style>
-        /* ===== CSS变量（主题色、深浅模式） ===== */
-        :root {
-            --bg: #0b0b0f;
-            --card-bg: rgba(20, 20, 40, 0.55);
-            --card-border: rgba(255, 255, 255, 0.12);
-            --text-primary: #f0f0f5;
-            --text-secondary: #b0b0c0;
-            --text-muted: #7a7a8a;
-            --shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-            --input-bg: rgba(255, 255, 255, 0.06);
-            --result-bg: rgba(255, 255, 255, 0.05);
-            --badge-bg: rgba(247, 151, 30, 0.2);
-            --badge-color: #f7971e;
-            --gradient-primary: linear-gradient(135deg, #f7971e, #ffd200);
-            --gradient-pc28: linear-gradient(135deg, #f6d365, #fda085);
-            --gradient-tg: linear-gradient(135deg, #4facfe, #00f2fe);
-            --scrollbar-thumb: rgba(247, 151, 30, 0.3);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --theme-color: #f7971e;
-            --glass-bg: rgba(255, 255, 255, 0.04);
-            --glass-shine: rgba(255, 255, 255, 0.06);
+        /* ===== 全局重置 & 字体 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        /* 深色模式已固定（因为液态玻璃在深色背景下更炫），但保留切换变量 */
-        * { margin:0; padding:0; box-sizing:border-box; }
+
         body {
-            font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
-            background: var(--bg);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #0d0f14;
+            color: #e8edf5;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px 12px 40px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            overflow-x: hidden;
-            position: relative;
-        }
-        /* ===== 液态玻璃背景（动态流动光泽） ===== */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 40%, rgba(247, 151, 30, 0.15), transparent 60%),
-                        radial-gradient(circle at 70% 80%, rgba(255, 210, 0, 0.10), transparent 50%),
-                        radial-gradient(circle at 20% 70%, rgba(100, 200, 255, 0.08), transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(200, 100, 255, 0.08), transparent 50%);
-            background-size: 100% 100%;
-            animation: liquidGlass 20s ease-in-out infinite alternate;
-            pointer-events: none;
-            z-index: 0;
-        }
-        @keyframes liquidGlass {
-            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            25% { transform: translate(5%, -5%) scale(1.05) rotate(2deg); }
-            50% { transform: translate(-3%, 8%) scale(0.95) rotate(-3deg); }
-            75% { transform: translate(8%, 3%) scale(1.02) rotate(1deg); }
-            100% { transform: translate(-5%, -3%) scale(0.98) rotate(-1deg); }
-        }
-        /* 增加玻璃光泽条纹 */
-        body::after {
-            content: '';
-            position: fixed;
-            top: -20%;
-            left: -20%;
-            width: 140%;
-            height: 140%;
-            background: repeating-linear-gradient(45deg,
-                transparent 0px,
-                transparent 40px,
-                rgba(255,255,255,0.02) 40px,
-                rgba(255,255,255,0.02) 42px,
-                transparent 42px,
-                transparent 80px);
-            animation: shineMove 12s linear infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-        @keyframes shineMove {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
         }
 
-        /* 雪花 Canvas 覆盖层 */
-        #snowCanvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        .container {
-            max-width: 1000px;
+        .app-container {
+            max-width: 800px;
             width: 100%;
-            position: relative;
-            z-index: 1;
-            padding-bottom: 40px;
+            margin: 0 auto;
         }
 
-        /* 玻璃卡片（毛玻璃+光泽） */
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-radius: 40px;
-            padding: 24px 28px;
-            margin-bottom: 24px;
-            border: 1px solid var(--card-border);
-            box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-        /* 卡片内部光泽 */
-        .glass-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.05), transparent 70%);
-            pointer-events: none;
-        }
-        .glass-card:active { transform: scale(0.98); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-
-        /* 通用组件 */
-        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .flex-center { display: flex; align-items: center; gap: 8px; }
-        .btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.12);
-            color: white;
-            padding: 10px 22px;
-            border-radius: 40px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
-            display: inline-flex;
+        /* ===== 顶部栏 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+            padding: 10px 0 16px;
+            border-bottom: 1px solid #2a2f3a;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
             gap: 8px;
-            backdrop-filter: blur(8px);
-            text-decoration: none;
         }
-        .btn:active { transform: scale(0.94); }
-        .btn-primary { background: var(--gradient-primary); border: none; color: #0b0b0f; box-shadow: 0 8px 24px rgba(247,151,30,0.3); }
-        .btn-pc28 { background: var(--gradient-pc28); border: none; color: #0b0b0f; box-shadow: 0 8px 24px rgba(253,160,133,0.3); }
-        .btn-tg { background: var(--gradient-tg); border: none; color: white; }
-        .btn-theme { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); font-size: 18px; padding: 8px 16px; }
-        .input-field {
-            width: 100%;
-            padding: 14px 20px;
-            border-radius: 40px;
-            border: 1px solid var(--card-border);
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-size: 15px;
-            outline: none;
-            transition: all 0.3s;
-            margin-bottom: 14px;
-            font-weight: 500;
-        }
-        .input-field::placeholder { color: var(--text-muted); }
-        .input-field:focus { border-color: #f7971e; box-shadow: 0 0 0 4px rgba(247,151,30,0.15); background: rgba(255,255,255,0.08); }
-        .badge {
-            display: inline-block;
-            background: var(--badge-bg);
-            padding: 4px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            color: var(--badge-color);
-            font-weight: 600;
-            backdrop-filter: blur(4px);
-        }
-        .section-title {
-            font-weight: 700;
-            margin-bottom: 14px;
+
+        .header-left {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 18px;
-            color: var(--text-primary);
         }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .row:last-child { border-bottom: none; }
-        .label { color: var(--text-secondary); }
-        .value { font-weight: 600; }
-        .rec-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 12px 16px;
-            margin: 6px 0;
-            text-align: center;
-            font-size: 20px;
+
+        .logo {
+            font-size: 22px;
             font-weight: 700;
-            border-left: 4px solid var(--theme-color);
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.5px;
         }
-        .rec-main { border-left-color: #ffd700; background: rgba(255,215,0,0.08); }
-        .chart-box { background: rgba(0,0,0,0.3); border-radius: 14px; padding: 12px; margin: 10px 0; }
-        .chart-container { position: relative; height: 200px; }
-        .chart-container canvas { width: 100% !important; height: 100% !important; }
-        .status-line {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
+
+        .logo-sub {
             font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 14px;
+            color: #8892a8;
+            font-weight: 400;
+            -webkit-text-fill-color: #8892a8;
+            background: none;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 14px;
+        }
+
+        .header-right .time {
+            color: #8892a8;
+            font-size: 13px;
+        }
+
+        .header-right .tg-link {
+            color: #58a9ff;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #1a2332;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid #2a3a55;
+            transition: all 0.2s;
+        }
+
+        .header-right .tg-link:hover {
+            background: #24324a;
+            border-color: #4a7ab5;
+        }
+
+        .header-right .tg-link svg {
+            width: 16px;
+            height: 16px;
+            fill: #58a9ff;
+        }
+
+        /* ===== 最新一期卡片 ===== */
+        .latest-card {
+            background: #161b24;
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #262d3a;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .latest-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .latest-issue {
+            font-size: 15px;
+            color: #8892a8;
+        }
+
+        .latest-issue strong {
+            color: #e8edf5;
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .latest-numbers {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .latest-numbers .ball {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            background: #1e2a3a;
+            color: #e8edf5;
+            border: 1px solid #334155;
+        }
+
+        .latest-numbers .ball.ball-a {
+            background: #2d3748;
+            border-color: #4a5568;
+        }
+        .latest-numbers .ball.ball-b {
+            background: #2d3748;
+            border-color: #4a5568;
+        }
+        .latest-numbers .ball.ball-c {
+            background: #2d3748;
+            border-color: #4a5568;
+        }
+
+        .latest-sum {
+            font-size: 15px;
+            color: #8892a8;
+            margin-left: 4px;
+        }
+
+        .latest-sum strong {
+            color: #f7d44a;
+            font-weight: 600;
+        }
+
+        .latest-tags {
+            display: flex;
+            gap: 8px;
+            margin-left: 6px;
+        }
+
+        .tag {
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .tag-small {
+            background: #1a3a3a;
+            color: #5fc9c9;
+            border: 1px solid #2a5a5a;
+        }
+
+        .tag-big {
+            background: #3a2a1a;
+            color: #f7b84a;
+            border: 1px solid #5a4a2a;
+        }
+
+        .tag-odd {
+            background: #2a1a3a;
+            color: #c97ad4;
+            border: 1px solid #4a2a5a;
+        }
+
+        .tag-even {
+            background: #1a2a3a;
+            color: #5a9fd4;
+            border: 1px solid #2a4a5a;
+        }
+
+        .latest-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-refresh {
+            background: #1e2a3a;
+            border: 1px solid #334155;
+            color: #e8edf5;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
             gap: 6px;
         }
-        .status-line span {
-            background: rgba(255,255,255,0.05);
-            padding: 4px 16px;
-            border-radius: 30px;
-            backdrop-filter: blur(4px);
+
+        .btn-refresh:hover {
+            background: #2a3a4a;
+            border-color: #4a6a8a;
         }
-        .time-display { font-weight: 600; color: var(--badge-color); }
-        .countdown-big {
-            font-size: 18px;
+
+        .btn-refresh:active {
+            transform: scale(0.96);
+        }
+
+        .btn-refresh svg {
+            width: 14px;
+            height: 14px;
+            fill: #8892a8;
+        }
+
+        /* ===== 推荐区域 ===== */
+        .recommend-section {
+            background: #161b24;
+            border-radius: 16px;
+            padding: 18px 20px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #262d3a;
+        }
+
+        .recommend-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .recommend-title {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recommend-title .icon {
+            font-size: 20px;
+        }
+
+        .recommend-badge {
+            font-size: 12px;
+            background: #1a2a3a;
+            color: #5a9fd4;
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid #2a4a5a;
+        }
+
+        .recommend-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .recommend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0d1118;
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1px solid #1f2835;
+            transition: all 0.2s;
+        }
+
+        .recommend-item:hover {
+            border-color: #334155;
+            background: #11171f;
+        }
+
+        .recommend-item .label {
+            font-size: 13px;
+            color: #8892a8;
+            font-weight: 500;
+            min-width: 60px;
+        }
+
+        .recommend-item .result {
+            font-size: 20px;
             font-weight: 700;
-            color: var(--badge-color);
-            background: rgba(247,151,30,0.15);
-            padding: 4px 16px;
-            border-radius: 40px;
-            display: inline-block;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .hot-cold-list { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 4px 0; }
-        .hot { color: #ff4757; font-weight: 700; }
-        .cold { color: #1e90ff; font-weight: 700; }
-        .footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0 10px; opacity: 0.7; }
-        .spinner {
+
+        .recommend-item .result .result-tag {
+            padding: 2px 16px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+
+        .result-tag.tag-big {
+            background: #3a2a1a;
+            color: #f7b84a;
+            border: 1px solid #5a4a2a;
+        }
+
+        .result-tag.tag-small {
+            background: #1a3a3a;
+            color: #5fc9c9;
+            border: 1px solid #2a5a5a;
+        }
+
+        .result-tag.tag-odd {
+            background: #2a1a3a;
+            color: #c97ad4;
+            border: 1px solid #4a2a5a;
+        }
+
+        .result-tag.tag-even {
+            background: #1a2a3a;
+            color: #5a9fd4;
+            border: 1px solid #2a4a5a;
+        }
+
+        .result-tag.tag-big-odd {
+            background: #3a2a1a;
+            color: #f7b84a;
+            border: 1px solid #5a4a2a;
+        }
+        .result-tag.tag-big-even {
+            background: #3a2a1a;
+            color: #f7b84a;
+            border: 1px solid #5a4a2a;
+        }
+        .result-tag.tag-small-odd {
+            background: #1a3a3a;
+            color: #5fc9c9;
+            border: 1px solid #2a5a5a;
+        }
+        .result-tag.tag-small-even {
+            background: #1a3a3a;
+            color: #5fc9c9;
+            border: 1px solid #2a5a5a;
+        }
+
+        .recommend-item .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-copy {
+            background: transparent;
+            border: 1px solid #2a3a4a;
+            color: #8892a8;
+            padding: 4px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-copy:hover {
+            background: #1a2a3a;
+            border-color: #4a7a9a;
+            color: #e8edf5;
+        }
+
+        .btn-copy:active {
+            transform: scale(0.94);
+        }
+
+        .btn-copy.copied {
+            border-color: #4ac97a;
+            color: #4ac97a;
+            background: #1a3a2a;
+        }
+
+        .btn-copy svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .recommend-empty {
+            color: #5a6a7a;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 14px;
+        }
+
+        /* ===== 历史表格 ===== */
+        .history-section {
+            background: #161b24;
+            border-radius: 16px;
+            padding: 16px 16px 12px;
+            border: 1px solid #262d3a;
+            overflow: hidden;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e8edf5;
+        }
+
+        .history-count {
+            font-size: 12px;
+            color: #5a6a7a;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 480px;
+        }
+
+        .history-table th {
+            text-align: center;
+            padding: 8px 4px;
+            color: #6a7a8a;
+            font-weight: 500;
+            font-size: 12px;
+            border-bottom: 1px solid #1f2835;
+            letter-spacing: 0.5px;
+        }
+
+        .history-table td {
+            text-align: center;
+            padding: 8px 4px;
+            border-bottom: 1px solid #141a22;
+            font-weight: 400;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table .issue-cell {
+            color: #8892a8;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .history-table .num-cell {
+            font-weight: 600;
+            font-size: 15px;
+            color: #e8edf5;
+        }
+
+        .history-table .sum-cell {
+            font-weight: 600;
+            color: #f7d44a;
+        }
+
+        .history-table .size-cell {
+            font-weight: 500;
+        }
+
+        .history-table .size-cell.small {
+            color: #5fc9c9;
+        }
+        .history-table .size-cell.big {
+            color: #f7b84a;
+        }
+
+        .history-table .parity-cell {
+            font-weight: 500;
+        }
+        .history-table .parity-cell.odd {
+            color: #c97ad4;
+        }
+        .history-table .parity-cell.even {
+            color: #5a9fd4;
+        }
+
+        .history-table .history-ball {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #f7971e;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 网格布局 */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width:600px) {
-            body { padding: 12px; }
-            .glass-card { padding: 18px 20px; border-radius: 32px; }
-            .grid-2 { grid-template-columns: 1fr; }
-            .btn { font-size: 13px; padding: 8px 16px; }
-            .input-field { font-size: 14px; padding: 12px 16px; }
-            .status-line { font-size: 12px; }
-            .rec-card { font-size: 17px; }
-            .countdown-big { font-size: 16px; padding: 2px 12px; }
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            background: #1a2332;
+            color: #e8edf5;
+            border: 1px solid #2a3a4a;
+            margin: 0 1px;
         }
 
-        /* 额外工具 */
-        .param-slider { width: 100%; accent-color: var(--theme-color); }
-        .param-label { display: flex; justify-content: space-between; font-size: 14px; }
-        .btn-small { font-size: 10px; padding: 2px 8px; }
-        .theme-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-        .theme-dot {
-            width: 24px; height: 24px; border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
-            cursor: pointer; transition: all 0.2s;
+        .loading-text {
+            color: #5a6a7a;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 14px;
         }
-        .theme-dot:hover { transform: scale(1.2); }
-        .theme-dot.active { border-color: #fff; box-shadow: 0 0 12px var(--theme-color); }
-        .history-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px; }
-        .history-table th, .history-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: center; }
-        .history-table .hit { color: #2ed573; }
-        .history-table .miss { color: #ff4757; }
-        .share-btn { background: var(--gradient-tg); border: none; color: white; }
+
+        .error-text {
+            color: #d45a5a;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 10px;
+            font-size: 12px;
+            color: #4a5a6a;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1a2a3a;
+            color: #e8edf5;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            border: 1px solid #2a4a5a;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            opacity: 0;
+            transition: all 0.4s ease;
+            pointer-events: none;
+            z-index: 999;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .header-left {
+                justify-content: center;
+            }
+            .header-right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .latest-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                padding: 14px 16px;
+            }
+            .latest-left {
+                justify-content: center;
+                gap: 10px;
+            }
+            .latest-right {
+                justify-content: center;
+            }
+            .latest-numbers .ball {
+                width: 32px;
+                height: 32px;
+                font-size: 15px;
+            }
+            .recommend-item {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .recommend-item .result {
+                font-size: 17px;
+                flex-wrap: wrap;
+            }
+            .recommend-item .actions {
+                margin-left: auto;
+            }
+            .history-table {
+                font-size: 12px;
+                min-width: 400px;
+            }
+            .history-table .history-ball {
+                width: 24px;
+                height: 24px;
+                line-height: 24px;
+                font-size: 11px;
+            }
+            .toast {
+                font-size: 12px;
+                padding: 8px 18px;
+                bottom: 20px;
+            }
+            .logo {
+                font-size: 18px;
+            }
+            .header-right .time {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .latest-left {
+                flex-direction: column;
+                gap: 6px;
+            }
+            .latest-numbers {
+                gap: 6px;
+            }
+            .latest-numbers .ball {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+            .recommend-item {
+                padding: 10px 12px;
+            }
+            .recommend-item .result {
+                font-size: 15px;
+            }
+            .btn-copy {
+                padding: 2px 10px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <!-- 雪花 Canvas -->
-    <canvas id="snowCanvas"></canvas>
-
-    <div class="container">
+    <div class="app-container">
+        <!-- ===== Toast ===== -->
+        <div id="toast" class="toast">已复制</div>
 
         <!-- ===== 顶部 ===== -->
-        <div class="glass-card">
-            <div class="flex-between">
-                <div>
-                    <div class="section-title" style="font-size:28px; margin-bottom:0;">🍮 多情PC28</div>
-                    <div style="font-size:14px; color:var(--text-secondary); margin-top:2px;">液态预测 · 智能分析</div>
+        <header class="header">
+            <div class="header-left">
+                <span class="logo">PC28 <span class="logo-sub">智能预测</span></span>
+            </div>
+            <div class="header-right">
+                <span class="time" id="headerTime">--:--</span>
+                <a href="https://t.me/ero6v" target="_blank" class="tg-link" rel="noopener">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.1-.2-.11-.06-.27-.04-.39-.02-.17.03-2.86 1.82-3.19 2.02-.3.18-.57.27-.82.27-.27 0-.78-.15-1.16-.27-.48-.15-.86-.23-.83-.48.02-.13.2-.27.55-.41 2.1-.91 3.5-1.51 4.2-1.8 2-.86 2.42-.94 2.69-.94.06 0 .17.01.25.08.06.05.1.13.09.23-.04.15-.06.18-.16.18z"/></svg>
+                    @ero6v
+                </a>
+            </div>
+        </header>
+
+        <!-- ===== 最新一期 ===== -->
+        <div class="latest-card" id="latestCard">
+            <div class="latest-left">
+                <div class="latest-issue">
+                    期号 <strong id="latestIssue">------</strong>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <span class="badge" id="statusBadge">● 在线</span>
-                    <button class="btn btn-theme" onclick="toggleTheme()" title="切换主题">🌓</button>
-                    <div class="theme-selector" id="themeSelector"></div>
+                <div class="latest-numbers" id="latestNumbers">
+                    <span class="ball ball-a">-</span>
+                    <span class="ball ball-b">-</span>
+                    <span class="ball ball-c">-</span>
+                </div>
+                <div class="latest-sum">
+                    和值 <strong id="latestSum">--</strong>
+                </div>
+                <div class="latest-tags" id="latestTags">
+                    <span class="tag tag-small">小</span>
+                    <span class="tag tag-even">双</span>
                 </div>
             </div>
-            <div class="flex-between" style="margin-top:12px;">
-                <div class="flex-center" style="gap:8px; flex-wrap:wrap;">
-                    <a class="btn btn-tg" href="tg://resolve?domain=on9vv" target="_blank">📱 客服</a>
-                    <button class="btn btn-pc28" onclick="fetchData()">🔄 获取数据</button>
-                    <button class="btn btn-primary" onclick="manualRefresh()">🔍 手动预测</button>
-                </div>
-                <div class="flex-center">
-                    <span style="font-size:13px; color:var(--text-secondary);">自动刷新</span>
-                    <label class="switch">
-                        <input type="checkbox" id="autoRefreshToggle" checked onchange="toggleAutoRefresh()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            <div class="status-line">
-                <span>🕐 <span id="currentTime" class="time-display">--</span></span>
-                <span>📍 <span id="userCity" class="time-display">获取中...</span></span>
-                <span>🌐 <span id="ipLocation" class="time-display">获取中...</span></span>
-                <span>⏳ 下次刷新：<span id="countdownDisplay" class="time-display">60秒</span></span>
-                <span>⏱️ 距开奖：<span id="nextDrawCountdown" class="countdown-big">--</span></span>
+            <div class="latest-right">
+                <button class="btn-refresh" id="btnRefresh" title="手动刷新数据">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    刷新
+                </button>
             </div>
         </div>
 
-        <!-- ===== PC28 预测核心 ===== -->
-        <div class="glass-card">
-            <div class="section-title">🎯 PC28 加拿大预测</div>
-            <div class="flex-between" style="margin-bottom:12px;">
-                <div class="flex-center">
-                    <span style="font-size:14px; color:var(--text-secondary);">算法：</span>
-                    <select id="algoSelect" style="background:var(--input-bg); border:1px solid var(--card-border); border-radius:30px; color:var(--text-primary); padding:8px 16px; font-size:14px; outline:none;">
-                        <option value="three_step">三步算法</option>
-                        <option value="wma">移动平均 (20期)</option>
-                        <option value="markov">马尔可夫链</option>
-                        <option value="ensemble">综合投票</option>
-                    </select>
+        <!-- ===== 推荐区域 ===== -->
+        <div class="recommend-section" id="recommendSection">
+            <div class="recommend-header">
+                <div class="recommend-title">
+                    <span class="icon">🧠</span> AI 推荐
+                    <span class="recommend-badge" id="recommendBadge">2 个</span>
                 </div>
-                <span style="font-size:13px; color:var(--text-secondary);" id="dataCount">数据期数：0</span>
-            </div>
-            <!-- 参数调节 -->
-            <div class="flex-between" style="margin:8px 0; padding:8px 0; border-top:1px solid var(--border-color); border-bottom:1px solid var(--border-color);">
-                <div style="flex:1; margin-right:12px;">
-                    <span class="param-label">WMA窗口期：<span id="wmaWindowDisplay">20</span></span>
-                    <input type="range" id="wmaWindowSlider" class="param-slider" min="5" max="30" value="20" step="5">
-                </div>
-                <div style="flex:1;">
-                    <span class="param-label">马尔可夫阶数：<span id="markovOrderDisplay">1</span></span>
-                    <input type="range" id="markovOrderSlider" class="param-slider" min="1" max="2" value="1" step="1">
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="btn-copy" id="btnCopyAll" style="border-color:#2a4a5a; color:#5a9fd4; padding:4px 16px;">
+                        📋 全部复制
+                    </button>
                 </div>
             </div>
-            <div id="resultArea"><div style="color:var(--text-muted);">点击 "获取数据" 开始</div></div>
-            <!-- 图表 -->
-            <div style="margin-top:16px;">
-                <div style="font-weight:600; margin-bottom:8px;">📊 走势图与热力分布</div>
-                <div class="chart-box">
-                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
-                    <div style="font-size:12px; color:var(--text-secondary); text-align:center; margin-top:4px;">—— 红色虚线为预测趋势 ——</div>
-                </div>
-                <div class="chart-box">
-                    <div class="chart-container"><canvas id="heatmapChart"></canvas></div>
-                    <div style="font-size:12px; color:var(--text-secondary); text-align:center; margin-top:4px;">号码出现频率</div>
-                </div>
-            </div>
-            <!-- 冷热 & 连出 -->
-            <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:20px; background:var(--result-bg); border-radius:24px; padding:16px;">
-                <div style="flex:1; min-width:150px;">
-                    <div style="font-weight:600; font-size:15px;">🔥 热门号码</div>
-                    <div id="hotNumbers" class="hot-cold-list">--</div>
-                </div>
-                <div style="flex:1; min-width:150px;">
-                    <div style="font-weight:600; font-size:15px;">❄️ 冷门号码</div>
-                    <div id="coldNumbers" class="hot-cold-list">--</div>
-                </div>
-                <div style="flex:1; min-width:150px;">
-                    <div style="font-weight:600; font-size:15px;">📌 形态连出</div>
-                    <div id="consecutiveStats" style="font-size:14px; color:var(--text-secondary);">--</div>
-                </div>
+            <div class="recommend-list" id="recommendList">
+                <div class="recommend-empty">加载数据中...</div>
             </div>
         </div>
 
-        <!-- ===== 胜率统计 + 历史记录 ===== -->
-        <div class="glass-card">
-            <div class="section-title">🏆 预测胜率统计</div>
-            <div class="flex-between">
-                <span>算法胜率：<strong id="algoWinRate" style="color:var(--theme-color);">--%</strong></span>
-                <span>用户胜率：<strong id="userWinRate" style="color:var(--theme-color);">--%</strong></span>
-                <button class="btn btn-primary" onclick="resetHistory()" style="font-size:12px; padding:4px 12px;">重置记录</button>
+        <!-- ===== 历史数据 ===== -->
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title">📊 历史走势</span>
+                <span class="history-count" id="historyCount">共 0 期</span>
             </div>
-            <div style="margin-top:12px;">
-                <div style="font-weight:600; font-size:15px;">📋 预测历史（最近10条）</div>
-                <div id="historyContainer" style="max-height:200px; overflow-y:auto;">
-                    <table class="history-table">
-                        <thead><tr><th>时间</th><th>预测形态</th><th>开奖结果</th><th>状态</th><th>操作</th></tr></thead>
-                        <tbody id="historyBody"><tr><td colspan="5" style="color:var(--text-muted);">暂无记录</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== 遗漏走势图 ===== -->
-        <div class="glass-card">
-            <div class="section-title">📈 形态遗漏走势</div>
-            <div class="chart-container" style="height:180px;"><canvas id="missTrendChart"></canvas></div>
-        </div>
-
-        <!-- ===== 和值分布 + 奇偶大小 ===== -->
-        <div class="grid-2">
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">📊 和值分布</div>
-                <div class="chart-container" style="height:150px;"><canvas id="sumDistChart"></canvas></div>
-            </div>
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">📊 奇偶/大小比例</div>
-                <div class="chart-container" style="height:150px;"><canvas id="ratioChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- ===== 详细走势表格 ===== -->
-        <div class="glass-card">
-            <div class="section-title">📋 近期详细走势</div>
-            <div id="detailTableContainer" style="max-height:200px; overflow-y:auto; font-size:13px;">
-                <table class="history-table">
-                    <thead><tr><th>期号</th><th>和值</th><th>大小</th><th>单双</th><th>拆分</th></tr></thead>
-                    <tbody id="detailBody"><tr><td colspan="5" style="color:var(--text-muted);">暂无数据</td></tr></tbody>
+            <div class="table-wrap">
+                <table class="history-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>期号</th>
+                            <th>A</th>
+                            <th>B</th>
+                            <th>C</th>
+                            <th>和值</th>
+                            <th>大小</th>
+                            <th>单双</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <tr><td colspan="7" class="loading-text">加载中...</td></tr>
+                    </tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- ===== 形态转换提示 + 投注建议 ===== -->
-        <div class="grid-2">
-            <div class="glass-card">
-                <div class="section-title">🔄 形态转换提示</div>
-                <div id="transitionTip" style="font-size:16px; color:var(--text-secondary);">--</div>
-            </div>
-            <div class="glass-card" style="border-left:4px solid var(--theme-color);">
-                <div class="section-title">💡 投注建议</div>
-                <div id="betSuggestion" style="font-size:15px; display:flex; flex-wrap:wrap; gap:8px;">
-                    <span>⭐ 主推：<strong style="color:var(--theme-color);">--</strong></span>
-                    <span>🔹 次推：<strong style="color:var(--theme-color);">--</strong></span>
-                    <span>🛡 补防：<strong style="color:var(--theme-color);">--</strong></span>
-                    <span>❌ 杀号：<strong style="color:#ff4757;">--</strong></span>
-                </div>
+            <div class="status-bar">
+                <span id="statusData">数据来源：加载中...</span>
+                <span id="statusTime">更新：--</span>
             </div>
         </div>
-
-        <!-- ===== 网速 + 汇率 ===== -->
-        <div class="grid-2">
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">📶 网速测试</div>
-                <div id="speedResult" style="display:flex; justify-content:space-around; text-align:center; padding:10px 0;">
-                    <div><div class="num" id="downloadSpeed" style="font-size:24px; font-weight:700; color:var(--badge-color);">--</div><div class="unit" style="font-size:14px; color:var(--text-muted);">下载 (Mbps)</div></div>
-                    <div><div class="num" id="uploadSpeed" style="font-size:24px; font-weight:700; color:var(--badge-color);">--</div><div class="unit" style="font-size:14px; color:var(--text-muted);">上传 (Mbps)</div></div>
-                </div>
-                <button class="btn btn-pc28" onclick="testSpeed()" style="width:100%; justify-content:center;">🚀 测速</button>
-                <div style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:6px;" id="speedStatus">点击测速</div>
-            </div>
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">💱 汇率换算</div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <select id="currencyFrom" class="input-field" style="padding:10px 16px; margin:0;">
-                        <option value="USDT">USDT</option>
-                        <option value="TON">TON</option>
-                        <option value="BTC">比特币</option>
-                        <option value="ETH">以太坊</option>
-                        <option value="USD">美元</option>
-                        <option value="EUR">欧元</option>
-                    </select>
-                    <div style="display:flex; gap:10px;">
-                        <input type="number" id="currencyAmount" class="input-field" value="1" style="flex:2; padding:10px 16px; margin:0;">
-                        <button class="btn btn-primary" onclick="convertCurrency()" style="flex:1; justify-content:center;">换算</button>
-                    </div>
-                    <div style="font-size:20px; font-weight:700; color:var(--badge-color); text-align:center;" id="currencyResult">-- 人民币</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== USDT + TON ===== -->
-        <div class="grid-2">
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">💵 USDT 余额</div>
-                <input type="text" id="usdtAddress" class="input-field" placeholder="TRC20 地址" style="margin-bottom:8px;">
-                <button class="btn btn-primary" onclick="queryUSDT()" style="width:100%; justify-content:center;">查询</button>
-                <div id="usdtResult" class="result-box" style="max-height:150px; font-size:12px; margin-top:8px;">等待查询...</div>
-            </div>
-            <div class="glass-card">
-                <div class="section-title" style="font-size:16px;">💎 TON 余额</div>
-                <input type="text" id="tonAddress" class="input-field" placeholder="TON 地址" style="margin-bottom:8px;">
-                <button class="btn btn-primary" onclick="queryTON()" style="width:100%; justify-content:center;">查询</button>
-                <div id="tonResult" class="result-box" style="max-height:150px; font-size:12px; margin-top:8px;">等待查询...</div>
-            </div>
-        </div>
-
-        <!-- ===== 底部 ===== -->
-        <div class="footer">
-            更新于 <span id="updateTime">--</span>
-            <button class="btn share-btn" onclick="sharePrediction()" style="margin-left:12px; padding:4px 16px; font-size:12px;">📤 分享截图</button>
-        </div>
-
     </div>
 
     <script>
         // ============================================================
-        // 1. 雪花特效（大雪花）
+        //  配置
         // ============================================================
-        (function() {
-            const canvas = document.getElementById('snowCanvas');
-            const ctx = canvas.getContext('2d');
-            let w, h, flakes = [];
-            const MAX = 60;
+        const CONFIG = {
+            HISTORY_URL: 'https://pc28.help/api/kj.json?nbr=20',
+            // 备用接口（暂时不用，但保留）
+            BACKUP_URL: 'https://pc28.help/api/yl.json',
+            // 用于判断走势混乱的阈值（最近8期大小+单双变化次数 ≥ 此值则混乱）
+            CHAOS_THRESHOLD: 6,
+            // 最大推荐数
+            MAX_RECOMMEND: 3,
+            // 默认推荐数（不混乱时）
+            DEFAULT_RECOMMEND_COUNT: 2,
+        };
 
-            function resize() {
-                w = window.innerWidth;
-                h = window.innerHeight;
-                canvas.width = w;
-                canvas.height = h;
+        // ============================================================
+        //  状态
+        // ============================================================
+        let allData = []; // 完整历史数据（最新在前）
+        let latestItem = null; // 最新一期
+        let isRefreshing = false;
+
+        // ============================================================
+        //  DOM 引用
+        // ============================================================
+        const $ = id => document.getElementById(id);
+        const latestIssue = $('latestIssue');
+        const latestNumbers = $('latestNumbers');
+        const latestSum = $('latestSum');
+        const latestTags = $('latestTags');
+        const historyBody = $('historyBody');
+        const historyCount = $('historyCount');
+        const recommendList = $('recommendList');
+        const recommendBadge = $('recommendBadge');
+        const statusData = $('statusData');
+        const statusTime = $('statusTime');
+        const headerTime = $('headerTime');
+        const toastEl = $('toast');
+        let toastTimer = null;
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function getNowStr() {
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function showToast(msg = '已复制', duration = 1800) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, duration);
+        }
+
+        // 从期号字符串提取数字部分（用于排序）
+        function parseIssueNum(issueStr) {
+            return parseInt(issueStr.replace(/[^0-9]/g, ''), 10) || 0;
+        }
+
+        // 判断大小 —— 修改为 0-13 小，14及以上 大（解决预测值超出27的问题）
+        function getSize(sum) {
+            const num = Number(sum);
+            if (num >= 0 && num <= 13) return '小';
+            if (num >= 14) return '大';
+            return '--';
+        }
+
+        // 判断单双
+        function getParity(sum) {
+            const num = Number(sum);
+            if (isNaN(num)) return '--';
+            return num % 2 === 0 ? '双' : '单';
+        }
+
+        // 获取组合标签 (大/小 + 单/双)
+        function getCombination(sum) {
+            const s = getSize(sum);
+            const p = getParity(sum);
+            if (s === '--' || p === '--') return '--';
+            return s + p;
+        }
+
+        // 获取CSS类名
+        function getSizeClass(size) { return size === '大' ? 'tag-big' : 'tag-small'; }
+
+        function getParityClass(parity) { return parity === '单' ? 'tag-odd' : 'tag-even'; }
+
+        function getCombinationClass(comb) {
+            const map = {
+                '大单': 'tag-big-odd',
+                '大双': 'tag-big-even',
+                '小单': 'tag-small-odd',
+                '小双': 'tag-small-even'
+            };
+            return map[comb] || '';
+        }
+
+        // ============================================================
+        //  核心算法
+        // ============================================================
+        /**
+         * 使用用户算法预测第 N 期
+         * @param {Array} history 历史数据数组，按时间降序（最新在前）
+         * @param {number} nIndex 预测第几期（0 = 最新一期之后的第一期）
+         * @param {object} options 提取规则配置
+         * @returns {object|null} { sum, size, parity, combination, detail }
+         */
+        function predictWithAlgorithm(history, nIndex = 0, options = null) {
+            // 默认提取规则 (用户标准算法)
+            const defaultRule = {
+                xSource: 'tens', // N-1期: 'tens' 十位, 'units' 个位
+                ySource: 'first', // N-2期: 'first' 第1位, 'second' 第2位, 'third' 第3位
+                zSource: 'third', // N-3期: 'first' 第1位, 'second' 第2位, 'third' 第3位
+            };
+            const rule = { ...defaultRule, ...options };
+
+            // 需要 N-1, N-2, N-3 期数据
+            const idx1 = nIndex + 0; // N-1
+            const idx2 = nIndex + 1; // N-2
+            const idx3 = nIndex + 2; // N-3
+
+            if (idx1 >= history.length || idx2 >= history.length || idx3 >= history.length) {
+                return null; // 数据不足
             }
-            window.addEventListener('resize', resize);
-            resize();
 
-            class Flake {
-                constructor() { this.reset(); }
-                reset() {
-                    this.x = Math.random() * w;
-                    this.y = Math.random() * h - h;
-                    this.r = Math.random() * 6 + 4; // 大雪花 4~10px
-                    this.sy = Math.random() * 1.0 + 0.4;
-                    this.sx = (Math.random() - 0.5) * 0.3;
-                    this.o = Math.random() * 0.7 + 0.3;
-                    this.phase = Math.random() * Math.PI * 2;
+            const n1 = history[idx1];
+            const n2 = history[idx2];
+            const n3 = history[idx3];
+
+            // 提取数字
+            let X, Y, Z;
+
+            // X: 从 N-1 期提取
+            if (rule.xSource === 'tens') {
+                // 十位数：三位数的中间一位（B）
+                X = n1.b;
+            } else { // 'units'
+                // 个位数：三位数的最后一位（C）
+                X = n1.c;
+            }
+
+            // Y: 从 N-2 期提取
+            const digits2 = [n2.a, n2.b, n2.c];
+            if (rule.ySource === 'first') Y = digits2[0];
+            else if (rule.ySource === 'second') Y = digits2[1];
+            else if (rule.ySource === 'third') Y = digits2[2];
+            else Y = digits2[0];
+
+            // Z: 从 N-3 期提取
+            const digits3 = [n3.a, n3.b, n3.c];
+            if (rule.zSource === 'first') Z = digits3[0];
+            else if (rule.zSource === 'second') Z = digits3[1];
+            else if (rule.zSource === 'third') Z = digits3[2];
+            else Z = digits3[2];
+
+            // 计算中间值
+            const mid = X + Y + Z;
+
+            // N-1 期最终结果（和值）
+            const n1Sum = n1.sum;
+
+            // 预测值
+            const predSum = mid + n1Sum;
+
+            // 判断形态
+            const size = getSize(predSum);
+            const parity = getParity(predSum);
+            const combination = size + parity;
+
+            return {
+                sum: predSum,
+                size: size,
+                parity: parity,
+                combination: combination,
+                detail: {
+                    X,
+                    Y,
+                    Z,
+                    mid,
+                    n1Sum,
+                    n1Issue: n1.issue,
+                    n2Issue: n2.issue,
+                    n3Issue: n3.issue,
                 }
-                update() {
-                    this.y += this.sy;
-                    this.x += this.sx + Math.sin(this.phase) * 0.2;
-                    this.phase += 0.02;
-                    if (this.y > h + 30) { this.reset(); this.y = -10; }
-                    if (this.x < -30) this.x = w + 30;
-                    if (this.x > w + 30) this.x = -30;
+            };
+        }
+
+        /**
+         * 获取多个不同的推荐
+         * @param {Array} history 历史数据
+         * @param {number} count 需要几个推荐 (2 或 3)
+         * @param {boolean} isChaos 是否混乱
+         * @returns {Array} 推荐结果数组
+         */
+        function getRecommendations(history, count = 2, isChaos = false) {
+            if (history.length < 4) return [];
+
+            // 定义算法变体
+            const variants = [
+                // 变体0: 标准算法 (推荐一)
+                { name: '推荐一', rule: { xSource: 'tens', ySource: 'first', zSource: 'third' } },
+                // 变体1: 推荐二
+                { name: '推荐二', rule: { xSource: 'units', ySource: 'second', zSource: 'first' } },
+                // 变体2: 推荐三
+                { name: '推荐三', rule: { xSource: 'tens', ySource: 'third', zSource: 'second' } },
+                // 额外变体 (备用)
+                { name: '推荐四', rule: { xSource: 'units', ySource: 'first', zSource: 'second' } },
+                { name: '推荐五', rule: { xSource: 'tens', ySource: 'second', zSource: 'first' } },
+                { name: '推荐六', rule: { xSource: 'units', ySource: 'third', zSource: 'third' } },
+            ];
+
+            const results = [];
+            const usedCombinations = new Set();
+
+            // 先计算所有变体的结果
+            const allResults = variants.map(v => {
+                const res = predictWithAlgorithm(history, 0, v.rule);
+                return { ...res, variantName: v.name, rule: v.rule };
+            }).filter(r => r !== null && r.combination !== '--');
+
+            // 去重（保留第一个出现的）
+            const uniqueResults = [];
+            const seen = new Set();
+            for (const r of allResults) {
+                const key = r.combination;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueResults.push(r);
                 }
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255,255,255,${this.o})`;
-                    ctx.fill();
-                    // 六角星效果（简单十字线）
-                    ctx.strokeStyle = `rgba(255,255,255,${this.o*0.3})`;
-                    ctx.lineWidth = 1;
-                    for (let i=0; i<6; i++) {
-                        let angle = i * Math.PI/3 + this.phase;
-                        ctx.beginPath();
-                        ctx.moveTo(this.x, this.y);
-                        ctx.lineTo(this.x + Math.cos(angle)*this.r*0.8, this.y + Math.sin(angle)*this.r*0.8);
-                        ctx.stroke();
+            }
+
+            // 推荐一: 使用标准算法 (变体0)
+            const stdResult = uniqueResults.find(r => r.variantName === '推荐一');
+            if (!stdResult) return [];
+
+            const finalResults = [];
+            // 先加入推荐一
+            finalResults.push({
+                label: '推荐一',
+                combination: stdResult.combination,
+                sum: stdResult.sum,
+                size: stdResult.size,
+                parity: stdResult.parity,
+                detail: stdResult.detail,
+                rule: stdResult.rule,
+                isPrimary: true,
+            });
+            usedCombinations.add(stdResult.combination);
+
+            // 从剩余结果中挑选与已有不同的
+            const candidates = uniqueResults.filter(r => r.variantName !== '推荐一' && !usedCombinations.has(r
+            .combination));
+
+            // 按顺序取需要的数量
+            const need = count - 1;
+            let taken = 0;
+            for (const c of candidates) {
+                if (taken >= need) break;
+                if (!usedCombinations.has(c.combination)) {
+                    finalResults.push({
+                        label: c.variantName,
+                        combination: c.combination,
+                        sum: c.sum,
+                        size: c.size,
+                        parity: c.parity,
+                        detail: c.detail,
+                        rule: c.rule,
+                        isPrimary: false,
+                    });
+                    usedCombinations.add(c.combination);
+                    taken++;
+                }
+            }
+
+            // 如果还是不够，从所有结果中补充（但必须不同）
+            if (taken < need) {
+                for (const r of uniqueResults) {
+                    if (taken >= need) break;
+                    if (!usedCombinations.has(r.combination) && r.variantName !== '推荐一') {
+                        finalResults.push({
+                            label: r.variantName,
+                            combination: r.combination,
+                            sum: r.sum,
+                            size: r.size,
+                            parity: r.parity,
+                            detail: r.detail,
+                            rule: r.rule,
+                            isPrimary: false,
+                        });
+                        usedCombinations.add(r.combination);
+                        taken++;
                     }
                 }
             }
-            for (let i=0; i<MAX; i++) flakes.push(new Flake());
-            function animate() {
-                ctx.clearRect(0, 0, w, h);
-                flakes.forEach(f => { f.update(); f.draw(); });
-                requestAnimationFrame(animate);
-            }
-            animate();
-        })();
 
-        // ============================================================
-        // 2. 主题切换 + 自定义色块
-        // ============================================================
-        const themes = [
-            { name:'金', color:'#f7971e', value:'' },
-            { name:'蓝', color:'#4facfe', value:'blue' },
-            { name:'粉', color:'#ff6b9d', value:'pink' },
-            { name:'绿', color:'#2ed573', value:'green' },
-            { name:'紫', color:'#a29bfe', value:'purple' },
-        ];
-        const sel = document.getElementById('themeSelector');
-        themes.forEach(t => {
-            const d = document.createElement('div');
-            d.className = 'theme-dot';
-            d.style.background = t.color;
-            d.dataset.theme = t.value;
-            d.title = t.name;
-            if (document.documentElement.getAttribute('data-theme') === t.value) d.classList.add('active');
-            d.onclick = () => {
-                document.documentElement.setAttribute('data-theme', t.value);
-                localStorage.setItem('themeCustom', t.value);
-                document.querySelectorAll('.theme-dot').forEach(x => x.classList.remove('active'));
-                d.classList.add('active');
-                // 更新CSS变量
-                document.documentElement.style.setProperty('--theme-color', t.color);
-                document.documentElement.style.setProperty('--badge-color', t.color);
-            };
-            sel.appendChild(d);
-        });
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const cur = html.getAttribute('data-theme');
-            if (cur === 'dark') {
-                html.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-            } else {
-                html.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-            }
-        }
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-
-        // ============================================================
-        // 3. 时钟、IP、城市、倒计时
-        // ============================================================
-        function updateClock() {
-            document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-        }
-        updateClock(); setInterval(updateClock, 1000);
-        document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
-
-        async function fetchIPAndCity() {
-            try {
-                const resp = await fetch('https://ip-api.com/json/?fields=status,country,city,isp');
-                const data = await resp.json();
-                if (data.status === 'success') {
-                    document.getElementById('ipLocation').textContent = `${data.country} · ${data.isp || ''}`;
-                    document.getElementById('userCity').textContent = data.city;
-                } else {
-                    document.getElementById('ipLocation').textContent = '未获取到';
-                    document.getElementById('userCity').textContent = '未知';
-                }
-            } catch {
-                document.getElementById('ipLocation').textContent = '未获取到';
-                document.getElementById('userCity').textContent = '未知';
-            }
-        }
-        fetchIPAndCity();
-
-        let countdownSeconds = 60;
-        let drawCountdownSeconds = 180;
-        let notificationPermission = false;
-
-        function updateCountdown() {
-            if (countdownSeconds <= 0) {
-                countdownSeconds = 60;
-                if (document.getElementById('autoRefreshToggle').checked) fetchData();
-            }
-            document.getElementById('countdownDisplay').textContent = countdownSeconds + '秒';
-            countdownSeconds--;
-        }
-        setInterval(updateCountdown, 1000);
-
-        function updateDrawCountdown() {
-            if (drawCountdownSeconds <= 0) {
-                drawCountdownSeconds = 180;
-                if (notificationPermission) new Notification('🎯 新一期开奖结果已出！', { body: '预测中奖，快去查看！', icon: '🎲' });
-            }
-            const m = Math.floor(drawCountdownSeconds / 60);
-            const s = drawCountdownSeconds % 60;
-            document.getElementById('nextDrawCountdown').textContent = `${m}分${String(s).padStart(2,'0')}秒`;
-            drawCountdownSeconds--;
-        }
-        setInterval(updateDrawCountdown, 1000); drawCountdownSeconds = 180; updateDrawCountdown();
-
-        function toggleAutoRefresh() {
-            countdownSeconds = 60;
-            document.getElementById('countdownDisplay').textContent = '60秒';
-        }
-        function requestNotificationPermission() {
-            if ('Notification' in window) {
-                if (Notification.permission === 'default') Notification.requestPermission().then(p => notificationPermission = (p === 'granted'));
-                else if (Notification.permission === 'granted') notificationPermission = true;
-            }
-        }
-        requestNotificationPermission();
-
-        // ============================================================
-        // 4. PC28 核心逻辑（完整）
-        // ============================================================
-        let pc28Records = [];
-        let trendChart = null, heatmapChart = null, missTrendChart = null, sumDistChart = null, ratioChart = null;
-        let predictionHistory = JSON.parse(localStorage.getItem('predictionHistory')) || [];
-
-        function generateThreeDigits(total) {
-            for (let i=0; i<100; i++) { let a=Math.floor(Math.random()*10), b=Math.floor(Math.random()*10), c=Math.floor(Math.random()*10); if (a+b+c===total) return [a,b,c]; }
-            let a=Math.min(9,total), b=Math.min(9,total-a), c=total-a-b;
-            if (c>9) { c=9; a=total-b-c; if (a<0) a=0; }
-            return [a,b,c];
-        }
-
-        function classifyRecord(r) {
-            let digits = generateThreeDigits(r.num);
-            let size = r.num >= 14 ? "大" : "小";
-            let parity = r.num % 2 === 1 ? "单" : "双";
-            return { expect: r.expect, num: r.num, digits, size, parity, form: size + parity };
-        }
-
-        function getWMAParams() { return parseInt(document.getElementById('wmaWindowSlider').value); }
-        function getMarkovOrder() { return parseInt(document.getElementById('markovOrderSlider').value); }
-
-        // ---- 算法 ----
-        function algoThreeStep(records) {
-            if (records.length<3) return null;
-            let n1=records[0], n2=records[1], n3=records[2];
-            let X=Math.floor(n1.num/10), Y=n2.digits[0]||0, Z=n3.digits[2]||0;
-            let mid=X+Y+Z, pred=mid+n1.num;
-            let size=pred>=14?"大":"小", parity=pred%2===1?"单":"双";
-            return { form: size+parity, predVal: pred, details: `X=${X},Y=${Y},Z=${Z},中间值=${mid},预测值=${pred}` };
-        }
-
-        function algoWMA(records, window) {
-            if (!window) window = getWMAParams();
-            if (records.length < window) return null;
-            let nums = records.slice(0, window).map(r => r.num);
-            let weights = Array.from({length: window}, (_,i) => i+1);
-            let wma = nums.reduce((s,n,i) => s + n*weights[i], 0) / weights.reduce((a,b) => a+b, 0);
-            let size = wma >= 14 ? "大" : "小";
-            let parity = Math.round(wma) % 2 === 1 ? "单" : "双";
-            return { form: size+parity, predVal: wma, details: `WMA=${wma.toFixed(2)}` };
-        }
-
-        function algoMarkov(records, order) {
-            if (!order) order = getMarkovOrder();
-            if (records.length < 10) return null;
-            let forms = records.map(r => r.form), states = ["大单","大双","小单","小双"], trans = {};
-            states.forEach(s => trans[s] = {});
-            for (let i=0; i<forms.length-order; i++) {
-                let cur=forms[i], nxt=forms[i+order];
-                if (states.includes(cur) && states.includes(nxt)) trans[cur][nxt] = (trans[cur][nxt]||0)+1;
-            }
-            let last = forms[0];
-            if (!trans[last] || Object.keys(trans[last]).length===0) return null;
-            let total = Object.values(trans[last]).reduce((a,b)=>a+b,0);
-            let max=0, maxF=null;
-            for (let f in trans[last]) { if (trans[last][f] > max) { max = trans[last][f]; maxF = f; } }
-            return { form: maxF, predVal: null, details: `${last}→${maxF} (${(max/total*100).toFixed(1)}%)` };
-        }
-
-        function algoEnsemble(records) {
-            let r = [algoThreeStep(records), algoWMA(records), algoMarkov(records)].filter(x => x);
-            if (r.length === 0) return null;
-            let cnt = {};
-            r.forEach(x => cnt[x.form] = (cnt[x.form]||0)+1);
-            let max=0, maxF=null; for (let f in cnt) { if (cnt[f] > max) { max = cnt[f]; maxF = f; } }
-            return { form: maxF, predVal: null, details: `综合${r.length}种算法` };
-        }
-
-        // ---- 统计推荐 ----
-        function getStatRecommendations(records) {
-            if (records.length < 10) return ["大单","大双","小单"];
-            let recent = records.slice(0,30);
-            let forms = recent.map(r => r.form), cnt = {};
-            forms.forEach(f => cnt[f] = (cnt[f]||0)+1);
-            let sorted = Object.entries(cnt).sort((a,b) => b[1] - a[1]);
-            let main = sorted[0][0];
-            let rec2 = sorted[1] ? sorted[1][0] : (main === "大单" ? "大双" : "大单");
-            let rec3 = sorted[2] ? sorted[2][0] : (main === "大单" ? "小单" : "小双");
-            return [main, rec2, rec3];
-        }
-
-        function getKillRecommendation(formCnt, total) {
-            if (Object.keys(formCnt).length === 0) return ["大单", 0];
-            let minForm = null, minCnt = Infinity;
-            for (let f in formCnt) { if (formCnt[f] < minCnt) { minCnt = formCnt[f]; minForm = f; } }
-            return [minForm, minCnt / total * 100];
-        }
-
-        function getHotColdNumbers(records) {
-            let freq = Array(28).fill(0);
-            records.forEach(r => { if (r.num >= 0 && r.num <= 27) freq[r.num]++; });
-            let sorted = freq.map((v,i) => ({num:i, count:v})).filter(f => f.count > 0).sort((a,b) => b.count - a.count);
-            return { hot: sorted.slice(0,5).map(f=>f.num), cold: sorted.slice(-5).map(f=>f.num) };
-        }
-
-        function getConsecutiveStats(records) {
-            if (records.length < 2) return { size:0, parity:0, form:0, sizeChar:'', parityChar:'', formChar:'' };
-            let sizes = records.map(r => r.size), parities = records.map(r => r.parity), forms = records.map(r => r.form);
-            let sizeRun=1, parityRun=1, formRun=1;
-            for (let i=1; i<sizes.length; i++) { if (sizes[i] === sizes[0]) sizeRun++; else break; }
-            for (let i=1; i<parities.length; i++) { if (parities[i] === parities[0]) parityRun++; else break; }
-            for (let i=1; i<forms.length; i++) { if (forms[i] === forms[0]) formRun++; else break; }
-            return { size: sizeRun, parity: parityRun, form: formRun, sizeChar: sizes[0], parityChar: parities[0], formChar: forms[0] };
-        }
-
-        function analyzeRecords(records, limit=30) {
-            if (records.length < 10) return null;
-            let recent = records.slice(0, limit);
-            let sizes = recent.map(r => r.size), parities = recent.map(r => r.parity), forms = recent.map(r => r.form);
-            let sizeCnt={}, parityCnt={}, formCnt={};
-            sizes.forEach(s => sizeCnt[s] = (sizeCnt[s]||0)+1);
-            parities.forEach(p => parityCnt[p] = (parityCnt[p]||0)+1);
-            forms.forEach(f => formCnt[f] = (formCnt[f]||0)+1);
-            return { sizeCnt, parityCnt, formCnt, total: recent.length };
-        }
-
-        // ---- 音效 ----
-        function playSound() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o = ctx.createOscillator(), g = ctx.createGain();
-                o.connect(g); g.connect(ctx.destination);
-                o.frequency.value = 880; o.type = 'sine';
-                g.gain.setValueAtTime(0.08, ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-                o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.25);
-            } catch(e) {}
-        }
-
-        // ---- 历史记录 ----
-        function recordPrediction(predicted, actual) {
-            const now = new Date().toLocaleString('zh-CN');
-            predictionHistory.unshift({ time: now, predicted, actual, hit: (predicted === actual), userMark: null });
-            if (predictionHistory.length > 50) predictionHistory.pop();
-            localStorage.setItem('predictionHistory', JSON.stringify(predictionHistory));
-            updateHistoryUI(); updateWinRates();
-        }
-
-        function updateHistoryUI() {
-            const tbody = document.getElementById('historyBody');
-            if (predictionHistory.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">暂无记录</td></tr>'; return; }
-            let html = '';
-            predictionHistory.slice(0,10).forEach((item,index) => {
-                const status = item.hit ? '✅ 命中' : '❌ 未中';
-                const cls = item.hit ? 'hit' : 'miss';
-                const userMark = item.userMark ? (item.userMark === 'win' ? '✅ 标记中' : '❌ 标记不中') : '未标记';
-                html += `<tr><td>${item.time}</td><td>${item.predicted}</td><td>${item.actual || '--'}</td><td class="${cls}">${status}</td><td><button class="btn btn-small" onclick="markHistory(${index},'win')">✓</button><button class="btn btn-small" onclick="markHistory(${index},'lose')">✗</button> ${userMark}</td></tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        function markHistory(index, mark) {
-            if (index<0 || index>=predictionHistory.length) return;
-            predictionHistory[index].userMark = mark;
-            localStorage.setItem('predictionHistory', JSON.stringify(predictionHistory));
-            updateHistoryUI(); updateWinRates();
-        }
-
-        function updateWinRates() {
-            const total = predictionHistory.filter(p => p.actual && p.actual !== '--').length;
-            const hits = predictionHistory.filter(p => p.hit === true).length;
-            const algoRate = total > 0 ? (hits / total * 100).toFixed(1) : '0.0';
-            document.getElementById('algoWinRate').textContent = algoRate + '%';
-            const marked = predictionHistory.filter(p => p.userMark !== null).length;
-            const userHits = predictionHistory.filter(p => p.userMark === 'win').length;
-            const userRate = marked > 0 ? (userHits / marked * 100).toFixed(1) : '0.0';
-            document.getElementById('userWinRate').textContent = userRate + '%';
-        }
-
-        function resetHistory() {
-            if (confirm('确定清除所有预测历史吗？')) { predictionHistory = []; localStorage.removeItem('predictionHistory'); updateHistoryUI(); updateWinRates(); }
-        }
-
-        // ---- 图表更新 ----
-        function updateCharts(records) {
-            // 趋势图
-            const nums = records.slice(0,20).map(r => r.num).reverse();
-            const labels = records.slice(0,20).map(r => r.expect).reverse();
-            const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            if (trendChart) trendChart.destroy();
-            trendChart = new Chart(ctxTrend, {
-                type: 'line',
-                data: { labels, datasets: [{ label: '和值', data: nums, borderColor: '#f7971e', backgroundColor: 'rgba(247,151,30,0.1)', tension: 0.2, fill: true, pointRadius: 3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 27, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
-            });
-            if (records.length >= 3) {
-                const pred = algoThreeStep(records);
-                if (pred && pred.predVal !== null) {
-                    const ext = [...nums.slice(0,-1), pred.predVal];
-                    trendChart.data.datasets.push({ label: '预测趋势', data: ext, borderColor: '#ff0000', borderDash: [6,4], borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 });
-                    trendChart.update();
+            // 如果还是不够，尝试用算法生成不同的组合（但必须基于算法）
+            if (taken < need) {
+                const offsets = [1, 2, 3, 4];
+                for (const off of offsets) {
+                    if (taken >= need) break;
+                    const res = predictWithAlgorithm(history, off, { xSource: 'tens', ySource: 'first',
+                        zSource: 'third' });
+                    if (res && res.combination !== '--' && !usedCombinations.has(res.combination)) {
+                        finalResults.push({
+                            label: `推荐${finalResults.length + 1}`,
+                            combination: res.combination,
+                            sum: res.sum,
+                            size: res.size,
+                            parity: res.parity,
+                            detail: res.detail,
+                            rule: { offset: off, ...{ xSource: 'tens', ySource: 'first', zSource: 'third' } },
+                            isPrimary: false,
+                        });
+                        usedCombinations.add(res.combination);
+                        taken++;
+                    }
                 }
             }
 
-            // 热力图
-            const freq = Array(28).fill(0);
-            records.forEach(r => { if (r.num>=0 && r.num<=27) freq[r.num]++; });
-            const ctxHeat = document.getElementById('heatmapChart').getContext('2d');
-            if (heatmapChart) heatmapChart.destroy();
-            heatmapChart = new Chart(ctxHeat, {
-                type: 'bar',
-                data: { labels: Array.from({length:28},(_,i)=>i), datasets: [{ label: '出现次数', data: freq, backgroundColor: freq.map(v => `rgba(247,151,30,${0.3 + Math.min(1,v/10)*0.7})`), borderColor: '#f7971e', borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
-            });
+            return finalResults;
         }
 
-        function updateMissTrend(records) {
-            if (records.length < 10) return;
-            const forms = ["大单","大双","小单","小双"], formMap = {};
-            forms.forEach(f => formMap[f] = []);
-            const recent = records.slice(0,30), labels = recent.map(r => r.expect).reverse();
-            forms.forEach(f => {
-                let lastSeen = -1;
-                const data = [];
-                for (let i=0; i<recent.length; i++) {
-                    if (recent[i].form === f) lastSeen = i;
-                    data.push(lastSeen === -1 ? i : i - lastSeen);
-                }
-                formMap[f] = data.reverse();
-            });
-            const ctx = document.getElementById('missTrendChart').getContext('2d');
-            if (missTrendChart) missTrendChart.destroy();
-            missTrendChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets: [
-                    { label: '大单', data: formMap['大单'], borderColor: '#ff4757', fill: false, tension: 0.2 },
-                    { label: '大双', data: formMap['大双'], borderColor: '#ffa502', fill: false, tension: 0.2 },
-                    { label: '小单', data: formMap['小单'], borderColor: '#1e90ff', fill: false, tension: 0.2 },
-                    { label: '小双', data: formMap['小双'], borderColor: '#2ed573', fill: false, tension: 0.2 }
-                ]},
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } }
-            });
-        }
+        // ============================================================
+        //  判断走势是否混乱
+        // ============================================================
+        function isTrendChaotic(history, lookback = 8) {
+            if (history.length < lookback + 1) return false;
 
-        function updateSumDist(records) {
-            if (records.length < 10) return;
-            const recent = records.slice(0,30);
-            const ranges = { '0-5':0, '6-10':0, '11-15':0, '16-20':0, '21-27':0 };
-            recent.forEach(r => { const n = r.num; if (n<=5) ranges['0-5']++; else if (n<=10) ranges['6-10']++; else if (n<=15) ranges['11-15']++; else if (n<=20) ranges['16-20']++; else ranges['21-27']++; });
-            const ctx = document.getElementById('sumDistChart').getContext('2d');
-            if (sumDistChart) sumDistChart.destroy();
-            sumDistChart = new Chart(ctx, {
-                type: 'pie',
-                data: { labels: Object.keys(ranges), datasets: [{ data: Object.values(ranges), backgroundColor: ['#ff4757','#ffa502','#1e90ff','#2ed573','#a29bfe'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-            });
-        }
+            const recent = history.slice(0, lookback);
+            let sizeChanges = 0;
+            let parityChanges = 0;
 
-        function updateRatio(records) {
-            if (records.length < 10) return;
-            const recent = records.slice(0,30);
-            const big = recent.filter(r => r.num >= 14).length, small = recent.length - big;
-            const odd = recent.filter(r => r.num % 2 === 1).length, even = recent.length - odd;
-            const ctx = document.getElementById('ratioChart').getContext('2d');
-            if (ratioChart) ratioChart.destroy();
-            ratioChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: ['大','小','单','双'], datasets: [{ label: '出现次数', data: [big, small, odd, even], backgroundColor: ['#ff4757','#1e90ff','#2ed573','#ffa502'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } }
-            });
-        }
-
-        function updateDetailTable(records) {
-            const tbody = document.getElementById('detailBody');
-            if (records.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);">暂无数据</td></tr>'; return; }
-            let html = '';
-            records.slice(0,10).forEach(r => {
-                const d = r.digits ? `${r.digits[0]},${r.digits[1]},${r.digits[2]}` : '--';
-                html += `<tr><td>${r.expect}</td><td>${r.num}</td><td>${r.size || '--'}</td><td>${r.parity || '--'}</td><td>${d}</td></tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        function updateTransitionTip(records) {
-            if (records.length < 2) { document.getElementById('transitionTip').textContent = '数据不足'; return; }
-            const forms = records.map(r => r.form), trans = {};
-            for (let i=0; i<forms.length-1; i++) {
-                const cur = forms[i], nxt = forms[i+1];
-                if (!trans[cur]) trans[cur] = {};
-                trans[cur][nxt] = (trans[cur][nxt]||0)+1;
+            for (let i = 1; i < recent.length; i++) {
+                if (recent[i].size !== recent[i - 1].size) sizeChanges++;
+                if (recent[i].parity !== recent[i - 1].parity) parityChanges++;
             }
-            const last = forms[0];
-            if (!trans[last] || Object.keys(trans[last]).length===0) { document.getElementById('transitionTip').textContent = '暂无转换数据'; return; }
-            let max=0, maxF=null;
-            for (let f in trans[last]) { if (trans[last][f] > max) { max = trans[last][f]; maxF = f; } }
-            const total = Object.values(trans[last]).reduce((a,b)=>a+b,0);
-            document.getElementById('transitionTip').textContent = `当前形态 ${last} → 最可能 ${maxF} (概率 ${(max/total*100).toFixed(1)}%)`;
+
+            const totalChanges = sizeChanges + parityChanges;
+            return totalChanges >= CONFIG.CHAOS_THRESHOLD;
         }
 
-        function updateBetSuggestion(records) {
-            if (records.length < 10) { document.getElementById('betSuggestion').innerHTML = '数据不足'; return; }
-            const stats = analyzeRecords(records);
-            if (!stats) { document.getElementById('betSuggestion').innerHTML = '统计失败'; return; }
-            const [rec1, rec2, rec3] = getStatRecommendations(stats);
-            const kill = getKillRecommendation(stats.formCnt, stats.total)[0];
-            document.getElementById('betSuggestion').innerHTML =
-                `<span>⭐ 主推：<strong style="color:var(--theme-color);">${rec1}</strong></span>
-                 <span>🔹 次推：<strong style="color:var(--theme-color);">${rec2}</strong></span>
-                 <span>🛡 补防：<strong style="color:var(--theme-color);">${rec3}</strong></span>
-                 <span>❌ 杀号：<strong style="color:#ff4757;">${kill}</strong></span>`;
-        }
-
-        function updateHotColdConsecutive(records) {
-            if (!records || records.length===0) return;
-            const { hot, cold } = getHotColdNumbers(records);
-            document.getElementById('hotNumbers').innerHTML = hot.map(n => `<span class="hot">${n}</span>`).join('');
-            document.getElementById('coldNumbers').innerHTML = cold.map(n => `<span class="cold">${n}</span>`).join('');
-            const cs = getConsecutiveStats(records);
-            if (cs.size > 0) document.getElementById('consecutiveStats').innerHTML = `大小连出 ${cs.size}期 (${cs.sizeChar}) | 单双连出 ${cs.parity}期 (${cs.parityChar}) | 形态连出 ${cs.form}期 (${cs.formChar})`;
-            else document.getElementById('consecutiveStats').textContent = '--';
-        }
-
-        // ---- 渲染 ----
-        function render() {
-            const area = document.getElementById('resultArea');
-            if (pc28Records.length < 3) { area.innerHTML = '数据不足3期'; return; }
-            const records = pc28Records.map(r => classifyRecord(r));
-            const algoType = document.getElementById('algoSelect').value;
-            let result = null;
-            switch(algoType) {
-                case 'three_step': result = algoThreeStep(records); break;
-                case 'wma': result = algoWMA(records); break;
-                case 'markov': result = algoMarkov(records); break;
-                case 'ensemble': result = algoEnsemble(records); break;
-                default: result = algoThreeStep(records);
-            }
-            const latest = records.slice(0,3);
-            const [rec1, rec2, rec3] = getStatRecommendations(records);
-            let html = '';
-            html += '<div style="font-weight:600;margin-bottom:8px;">📈 最近3期数据</div>';
-            latest.forEach(r => {
-                html += `<div class="row"><span class="label">${r.expect}</span><span class="value">${r.num}（${r.size}${r.parity}）</span><span style="color:var(--text-muted);">${r.digits[0]},${r.digits[1]},${r.digits[2]}</span></div>`;
-            });
-            const algoName = document.getElementById('algoSelect').options[document.getElementById('algoSelect').selectedIndex].text;
-            html += `<div style="font-weight:600;margin:12px 0 8px;">🧮 当前算法：${algoName}</div>`;
-            if (result) {
-                html += `<div class="row"><span class="label">预测值</span><span style="font-weight:700;">${result.predVal !== null ? result.predVal : '--'}</span></div>`;
-                html += `<div class="row"><span class="label">预测形态</span><span style="font-weight:700;color:var(--theme-color);">${result.form}</span></div>`;
-                html += `<div class="row"><span class="label">详情</span><span style="font-size:13px;color:var(--text-muted);">${result.details}</span></div>`;
-            } else {
-                html += `<div style="color:var(--text-muted);">算法所需数据不足</div>`;
-            }
-            html += `<div style="font-weight:600;margin:12px 0 8px;">🎯 统计推荐</div>`;
-            html += `<div class="rec-card rec-main">⭐ 主推：${rec1}</div>`;
-            html += `<div class="rec-card">🔹 次推：${rec2}</div>`;
-            html += `<div class="rec-card">🛡 补防：${rec3}</div>`;
-            area.innerHTML = html;
-            // 记录历史（记录主推）
-            if (result && result.form && latest.length>0 && latest[0].form) {
-                recordPrediction(result.form, latest[0].form);
-            }
-            // 更新其他
-            updateCharts(records);
-            updateHotColdConsecutive(records);
-            updateMissTrend(records);
-            updateSumDist(records);
-            updateRatio(records);
-            updateDetailTable(records);
-            updateTransitionTip(records);
-            updateBetSuggestion(records);
-        }
-
-        // ---- 获取数据 ----
+        // ============================================================
+        //  数据获取
+        // ============================================================
         async function fetchData() {
-            const area = document.getElementById('resultArea');
-            area.innerHTML = '<div class="spinner"></div> 加载数据中...';
+            // 使用主接口 kj.json
+            const url = CONFIG.HISTORY_URL;
             try {
-                const resp = await fetch('https://pc28.help/api/kj.json?nbr=20');
-                const json = await resp.json();
-                if (json && json.data && json.data.length > 0) {
-                    pc28Records = json.data.map(item => ({ expect: item.nbr, num: parseInt(item.num) }));
-                    pc28Records.sort((a,b) => parseInt(b.expect) - parseInt(a.expect));
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-cache',
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                return data;
+            } catch (err) {
+                console.warn('主接口失败，尝试备用接口...', err);
+                // 备用接口 yl.json 数据结构不同，暂时只作为兜底，但可能无法解析
+                // 这里简单抛出错误，让上层处理
+                throw new Error('数据获取失败，请检查网络或稍后重试');
+            }
+        }
+
+        /**
+         * 解析接口返回的数据 —— 适配 kj.json 的实际字段
+         */
+        function parseApiData(raw) {
+            let list = null;
+
+            if (Array.isArray(raw)) {
+                list = raw;
+            } else if (raw && typeof raw === 'object') {
+                // 优先取 data 字段（kj.json 的结构）
+                if (Array.isArray(raw.data)) {
+                    list = raw.data;
+                } else if (Array.isArray(raw.list)) {
+                    list = raw.list;
+                } else if (Array.isArray(raw.result)) {
+                    list = raw.result;
                 } else {
-                    pc28Records = [
-                        { expect:"3444534", num:19 }, { expect:"3444533", num:9 },
-                        { expect:"3444532", num:14 }, { expect:"3444531", num:12 },
-                        { expect:"3444530", num:16 }, { expect:"3444529", num:8 },
-                        { expect:"3444528", num:11 }, { expect:"3444527", num:6 },
-                        { expect:"3444526", num:18 }, { expect:"3444525", num:15 }
-                    ];
+                    // 兜底：取第一个数组属性
+                    for (const key of Object.keys(raw)) {
+                        if (Array.isArray(raw[key]) && raw[key].length > 0) {
+                            list = raw[key];
+                            break;
+                        }
+                    }
                 }
-            } catch(e) {
-                pc28Records = [
-                    { expect:"3444534", num:19 }, { expect:"3444533", num:9 },
-                    { expect:"3444532", num:14 }, { expect:"3444531", num:12 },
-                    { expect:"3444530", num:16 }, { expect:"3444529", num:8 },
-                    { expect:"3444528", num:11 }, { expect:"3444527", num:6 },
-                    { expect:"3444526", num:18 }, { expect:"3444525", num:15 }
-                ];
             }
-            document.getElementById('dataCount').textContent = `数据期数：${pc28Records.length}`;
-            document.getElementById('statusBadge').textContent = '● 在线';
-            document.getElementById('statusBadge').style.color = '#28a745';
-            render();
-            document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
-            playSound();
+
+            if (!list || list.length === 0) {
+                throw new Error('数据格式无法识别或为空');
+            }
+
+            // 标准化每条数据 —— 适配 kj.json 的字段
+            return list.map(item => {
+                // 期号: nbr
+                let issue = item.nbr || item.issue || item.period || '';
+                issue = String(issue).trim();
+
+                // 三个数字: 从 "8+3+6" 解析
+                let a = null, b = null, c = null;
+                const numberStr = item.number || item.numStr || '';
+                if (numberStr) {
+                    const parts = String(numberStr).split('+').map(Number);
+                    if (parts.length === 3) {
+                        a = parts[0];
+                        b = parts[1];
+                        c = parts[2];
+                    }
+                }
+
+                // 如果 number 字段解析失败，尝试单独字段
+                if (a === null || b === null || c === null) {
+                    a = item.a ?? item.num1 ?? null;
+                    b = item.b ?? item.num2 ?? null;
+                    c = item.c ?? item.num3 ?? null;
+                }
+
+                // 确保是数字
+                a = Number(a);
+                b = Number(b);
+                c = Number(c);
+
+                // 和值: num
+                let sum = item.num || item.sum || item.total || null;
+                if (sum === null || sum === undefined) {
+                    if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
+                        sum = a + b + c;
+                    } else {
+                        sum = 0;
+                    }
+                }
+                sum = Number(sum);
+
+                // 大小单双: 从 combination 获取，或自行计算
+                let size = '';
+                let parity = '';
+                if (item.combination) {
+                    const comb = String(item.combination);
+                    if (comb.includes('大')) size = '大';
+                    else if (comb.includes('小')) size = '小';
+                    if (comb.includes('单')) parity = '单';
+                    else if (comb.includes('双')) parity = '双';
+                }
+                if (!size) size = getSize(sum);
+                if (!parity) parity = getParity(sum);
+
+                return {
+                    issue: String(issue),
+                    a, b, c,
+                    sum,
+                    size: String(size),
+                    parity: String(parity),
+                    _raw: item,
+                };
+            }).filter(item => item.issue && !isNaN(item.a) && !isNaN(item.b) && !isNaN(item.c));
         }
 
-        function manualRefresh() {
-            if (pc28Records.length > 0) {
-                render();
-                countdownSeconds = 60;
-                document.getElementById('countdownDisplay').textContent = '60秒';
-            } else {
-                fetchData();
-            }
-        }
-
-        document.getElementById('algoSelect').addEventListener('change', function() { if (pc28Records.length > 0) render(); });
-        document.getElementById('wmaWindowSlider').addEventListener('input', function() {
-            document.getElementById('wmaWindowDisplay').textContent = this.value;
-            if (pc28Records.length > 0) { render(); }
-        });
-        document.getElementById('markovOrderSlider').addEventListener('input', function() {
-            document.getElementById('markovOrderDisplay').textContent = this.value;
-            if (pc28Records.length > 0) { render(); }
-        });
-
         // ============================================================
-        // 5. 网速测试
+        //  渲染
         // ============================================================
-        async function testSpeed() {
-            const status = document.getElementById('speedStatus');
-            status.textContent = '测速中...';
-            if ('connection' in navigator) {
-                const conn = navigator.connection;
-                const down = (conn.downlink || 0).toFixed(1);
-                document.getElementById('downloadSpeed').textContent = down;
-                document.getElementById('uploadSpeed').textContent = (down * 0.8).toFixed(1);
-                status.textContent = '✅ 测速完成 (估算值)';
+
+        // 渲染最新一期
+        function renderLatest(item) {
+            if (!item) {
+                latestIssue.textContent = '------';
+                latestNumbers.innerHTML = `
+                    <span class="ball ball-a">-</span>
+                    <span class="ball ball-b">-</span>
+                    <span class="ball ball-c">-</span>
+                `;
+                latestSum.textContent = '--';
+                latestTags.innerHTML = `<span class="tag tag-small">小</span><span class="tag tag-even">双</span>`;
                 return;
             }
-            try {
-                const start = Date.now();
-                await fetch('https://www.google.com/images/phd/px.gif?t=' + Date.now(), { mode: 'no-cors' });
-                const duration = (Date.now() - start) / 1000;
-                const speed = (10 * 8) / (duration * 1024);
-                const d = Math.max(0.1, speed).toFixed(1);
-                document.getElementById('downloadSpeed').textContent = d;
-                document.getElementById('uploadSpeed').textContent = (d * 0.8).toFixed(1);
-                status.textContent = '✅ 测速完成 (估算)';
-            } catch(e) {
-                document.getElementById('downloadSpeed').textContent = '--';
-                document.getElementById('uploadSpeed').textContent = '--';
-                status.textContent = '❌ 测速失败';
-            }
+
+            latestIssue.textContent = item.issue;
+            latestNumbers.innerHTML = `
+                <span class="ball ball-a">${item.a}</span>
+                <span class="ball ball-b">${item.b}</span>
+                <span class="ball ball-c">${item.c}</span>
+            `;
+            latestSum.textContent = item.sum;
+
+            const sizeCls = getSizeClass(item.size);
+            const parityCls = getParityClass(item.parity);
+            latestTags.innerHTML = `
+                <span class="tag ${sizeCls}">${item.size}</span>
+                <span class="tag ${parityCls}">${item.parity}</span>
+            `;
         }
 
-        // ============================================================
-        // 6. 汇率换算
-        // ============================================================
-        async function convertCurrency() {
-            const from = document.getElementById('currencyFrom').value;
-            const amount = parseFloat(document.getElementById('currencyAmount').value) || 1;
-            const resultDiv = document.getElementById('currencyResult');
-            resultDiv.textContent = '换算中...';
-            try {
-                const resp = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=CNY');
-                const data = await resp.json();
-                let rateCNY = 7.23;
-                if (data && data.rates && data.rates.CNY) rateCNY = data.rates.CNY;
-                const rates = { USDT: 1 * rateCNY, TON: 5.67 * rateCNY, BTC: 65000 * rateCNY, ETH: 3500 * rateCNY, USD: 1 * rateCNY, EUR: 0.93 * rateCNY };
-                const result = amount * rates[from];
-                resultDiv.textContent = result.toFixed(2) + ' 人民币';
-            } catch(e) {
-                const rates = { USDT: 7.23, TON: 5.67, BTC: 65000, ETH: 3500, USD: 1, EUR: 0.93 };
-                const result = amount * rates[from] * 7.23;
-                resultDiv.textContent = result.toFixed(2) + ' 人民币 (估算)';
+        // 渲染历史表格
+        function renderHistory(data) {
+            if (!data || data.length === 0) {
+                historyBody.innerHTML = `<tr><td colspan="7" class="loading-text">暂无数据</td></tr>`;
+                historyCount.textContent = '共 0 期';
+                return;
             }
+
+            let html = '';
+            const showCount = Math.min(data.length, 30);
+            for (let i = 0; i < showCount; i++) {
+                const item = data[i];
+                const sizeCls = item.size === '大' ? 'big' : 'small';
+                const parityCls = item.parity === '单' ? 'odd' : 'even';
+                html += `
+                    <tr>
+                        <td class="issue-cell">${item.issue}</td>
+                        <td class="num-cell"><span class="history-ball">${item.a}</span></td>
+                        <td class="num-cell"><span class="history-ball">${item.b}</span></td>
+                        <td class="num-cell"><span class="history-ball">${item.c}</span></td>
+                        <td class="sum-cell">${item.sum}</td>
+                        <td class="size-cell ${sizeCls}">${item.size}</td>
+                        <td class="parity-cell ${parityCls}">${item.parity}</td>
+                    </tr>
+                `;
+            }
+            historyBody.innerHTML = html;
+            historyCount.textContent = `共 ${data.length} 期 (显示最近 ${showCount} 期)`;
         }
 
-        // ============================================================
-        // 7. USDT & TON 查询
-        // ============================================================
-        async function queryUSDT() {
-            const address = document.getElementById('usdtAddress').value.trim();
-            const resultDiv = document.getElementById('usdtResult');
-            if (!address) { resultDiv.textContent = '⚠️ 请输入地址'; return; }
-            resultDiv.innerHTML = '<div class="spinner"></div> 查询中...';
-            try {
-                const resp = await fetch(`https://api.trongrid.io/v1/accounts/${address}/trc20/balance?contract_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`);
-                const data = await resp.json();
-                let balance = '0';
-                if (data.data && data.data.length > 0) balance = (parseInt(data.data[0].balance) / 1e6).toFixed(2);
-                resultDiv.textContent = `💰 余额：${balance} USDT`;
-            } catch(e) {
-                resultDiv.textContent = '❌ 查询失败，请稍后重试';
+        // 渲染推荐
+        function renderRecommendations(history) {
+            if (!history || history.length < 4) {
+                recommendList.innerHTML = `<div class="recommend-empty">数据不足，无法生成推荐 (需要至少4期数据)</div>`;
+                recommendBadge.textContent = '0 个';
+                return;
             }
-        }
 
-        async function queryTON() {
-            const address = document.getElementById('tonAddress').value.trim();
-            const resultDiv = document.getElementById('tonResult');
-            if (!address) { resultDiv.textContent = '⚠️ 请输入地址'; return; }
-            resultDiv.innerHTML = '<div class="spinner"></div> 查询中...';
-            try {
-                const resp = await fetch(`https://tonapi.io/v2/accounts/${address}`);
-                const data = await resp.json();
-                const balance = data.balance ? (parseInt(data.balance) / 1e9).toFixed(2) : '0';
-                resultDiv.textContent = `💎 余额：${balance} TON`;
-            } catch(e) {
-                resultDiv.textContent = '❌ 查询失败，请稍后重试';
+            // 判断走势是否混乱
+            const chaotic = isTrendChaotic(history);
+            const recommendCount = chaotic ? 3 : CONFIG.DEFAULT_RECOMMEND_COUNT;
+
+            // 获取推荐
+            const recs = getRecommendations(history, recommendCount, chaotic);
+
+            if (!recs || recs.length === 0) {
+                recommendList.innerHTML = `<div class="recommend-empty">无法生成推荐，请稍后重试</div>`;
+                recommendBadge.textContent = '0 个';
+                return;
             }
-        }
 
-        // ============================================================
-        // 8. 分享截图
-        // ============================================================
-        function sharePrediction() {
-            html2canvas(document.querySelector('.container')).then(canvas => {
-                canvas.toBlob(function(blob) {
-                    if (navigator.share) {
-                        navigator.share({ title: 'PC28预测结果', files: [new File([blob], 'prediction.png', { type: 'image/png' })] }).catch(() => {});
-                    } else {
-                        const link = document.createElement('a');
-                        link.download = 'prediction.png';
-                        link.href = canvas.toDataURL();
-                        link.click();
-                    }
+            // 更新badge
+            recommendBadge.textContent = `${recs.length} 个${chaotic ? ' 🔀 走势混乱' : ''}`;
+
+            // 渲染每个推荐
+            let html = '';
+            for (let i = 0; i < recs.length; i++) {
+                const r = recs[i];
+                const comb = r.combination;
+                const combCls = getCombinationClass(comb);
+                const label = r.isPrimary ? '⭐ 推荐一' : r.label;
+                const copyText = comb; // 单个复制只复制组合
+
+                html += `
+                    <div class="recommend-item" data-combination="${comb}">
+                        <div class="label">${label}</div>
+                        <div class="result">
+                            <span class="result-tag ${combCls}">${comb}</span>
+                            <span style="font-size:13px;color:#5a6a7a;font-weight:400;">${r.sum}</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-copy btn-copy-single" data-text="${copyText}" title="复制此推荐">
+                                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            recommendList.innerHTML = html;
+
+            // 绑定单个复制事件
+            document.querySelectorAll('.btn-copy-single').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const text = this.dataset.text || '';
+                    copyToClipboard(text, `已复制: ${text}`);
+                    this.classList.add('copied');
+                    setTimeout(() => this.classList.remove('copied'), 1500);
                 });
             });
+
+            // 绑定全部复制
+            const allBtn = document.getElementById('btnCopyAll');
+            if (allBtn) {
+                allBtn.onclick = function() {
+                    const items = document.querySelectorAll('.recommend-item');
+                    const texts = [];
+                    items.forEach(el => {
+                        const comb = el.dataset.combination || '';
+                        if (comb) texts.push(comb);
+                    });
+                    if (texts.length === 0) {
+                        showToast('没有可复制的内容', 1200);
+                        return;
+                    }
+                    const content = texts.join('\n');
+                    copyToClipboard(content, `已复制 ${texts.length} 个推荐`);
+                };
+            }
         }
 
         // ============================================================
-        // 9. 初始化
+        //  复制功能
         // ============================================================
-        fetchData();
-        setTimeout(testSpeed, 1500);
-        updateHistoryUI();
-        updateWinRates();
+        function copyToClipboard(text, toastMsg) {
+            if (!text) {
+                showToast('内容为空', 1000);
+                return;
+            }
 
-        // 导出部分函数供全局使用（用于按钮事件）
-        window.fetchData = fetchData;
-        window.manualRefresh = manualRefresh;
-        window.testSpeed = testSpeed;
-        window.convertCurrency = convertCurrency;
-        window.queryUSDT = queryUSDT;
-        window.queryTON = queryTON;
-        window.sharePrediction = sharePrediction;
-        window.toggleTheme = toggleTheme;
-        window.resetHistory = resetHistory;
-        window.markHistory = markHistory;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(toastMsg || '已复制');
+                }).catch(() => {
+                    fallbackCopy(text, toastMsg);
+                });
+            } else {
+                fallbackCopy(text, toastMsg);
+            }
+        }
+
+        function fallbackCopy(text, toastMsg) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast(toastMsg || '已复制');
+            } catch (err) {
+                showToast('复制失败，请手动复制', 1500);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // ============================================================
+        //  主流程
+        // ============================================================
+        async function loadData(showLoading = true) {
+            if (isRefreshing) return;
+            isRefreshing = true;
+
+            if (showLoading) {
+                historyBody.innerHTML = `<tr><td colspan="7" class="loading-text">加载中...</td></tr>`;
+                recommendList.innerHTML = `<div class="recommend-empty">加载数据中...</div>`;
+            }
+
+            try {
+                const raw = await fetchData();
+                const parsed = parseApiData(raw);
+
+                if (!parsed || parsed.length === 0) {
+                    throw new Error('解析后无有效数据');
+                }
+
+                // 按期号降序排序（最新在前）
+                parsed.sort((a, b) => parseIssueNum(b.issue) - parseIssueNum(a.issue));
+
+                allData = parsed;
+                latestItem = allData.length > 0 ? allData[0] : null;
+
+                // 更新UI
+                renderLatest(latestItem);
+                renderHistory(allData);
+                renderRecommendations(allData);
+
+                statusData.textContent = `数据来源：${allData.length} 期`;
+                statusTime.textContent = `更新：${getNowStr()}`;
+                headerTime.textContent = getNowStr();
+
+            } catch (err) {
+                console.error('加载失败', err);
+                historyBody.innerHTML = `<tr><td colspan="7" class="error-text">❌ ${err.message || '加载失败，请重试'}</td></tr>`;
+                recommendList.innerHTML = `<div class="recommend-empty">⚠️ 数据加载失败，请点击刷新重试</div>`;
+                statusData.textContent = '数据来源：加载失败';
+                statusTime.textContent = `更新：${getNowStr()}`;
+                showToast('数据加载失败: ' + (err.message || '未知错误'), 2500);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
+        // ============================================================
+        //  启动 & 事件绑定
+        // ============================================================
+
+        // 刷新按钮
+        document.getElementById('btnRefresh').addEventListener('click', function() {
+            this.textContent = '刷新中...';
+            this.disabled = true;
+            loadData(true).finally(() => {
+                this.textContent = '刷新';
+                this.disabled = false;
+            });
+        });
+
+        // 初始加载
+        loadData(true);
+
+        // 更新时间显示
+        setInterval(() => {
+            headerTime.textContent = getNowStr();
+        }, 30000);
+
+        console.log('🚀 PC28 智能预测已启动');
+        console.log('📊 算法: 用户自定义提取 + 加法预测 (大小判定 >=14 为大)');
+        console.log('📞 客服: @ero6v');
+
+        // 暴露一些变量便于调试
+        window.__app = {
+            allData,
+            latestItem,
+            loadData,
+            predictWithAlgorithm,
+            getRecommendations,
+            isTrendChaotic,
+            CONFIG,
+        };
     </script>
+
 </body>
 </html>
