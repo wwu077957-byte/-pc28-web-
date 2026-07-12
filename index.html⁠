@@ -2,1511 +2,672 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PC28 智能预测</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>PC28 多情120算法 · 120🇨🇦</title>
     <style>
-        /* ===== 全局重置 & 字体 ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: #0d0f14;
-            color: #e8edf5;
-            min-height: 100vh;
-            padding: 16px 12px 40px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .app-container {
-            max-width: 800px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        /* ===== 顶部栏 ===== */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 16px;
-            border-bottom: 1px solid #2a2f3a;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo {
-            font-size: 22px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 0.5px;
-        }
-
-        .logo-sub {
-            font-size: 13px;
-            color: #8892a8;
-            font-weight: 400;
-            -webkit-text-fill-color: #8892a8;
-            background: none;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            font-size: 14px;
-        }
-
-        .header-right .time {
-            color: #8892a8;
-            font-size: 13px;
-        }
-
-        .header-right .tg-link {
-            color: #58a9ff;
-            text-decoration: none;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: #1a2332;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #2a3a55;
-            transition: all 0.2s;
-        }
-
-        .header-right .tg-link:hover {
-            background: #24324a;
-            border-color: #4a7ab5;
-        }
-
-        .header-right .tg-link svg {
-            width: 16px;
-            height: 16px;
-            fill: #58a9ff;
-        }
-
-        /* ===== 最新一期卡片 ===== */
-        .latest-card {
-            background: #161b24;
-            border-radius: 16px;
-            padding: 18px 20px;
-            margin-bottom: 20px;
-            border: 1px solid #262d3a;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .latest-left {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            flex-wrap: wrap;
-        }
-
-        .latest-issue {
-            font-size: 15px;
-            color: #8892a8;
-        }
-
-        .latest-issue strong {
-            color: #e8edf5;
-            font-weight: 600;
-            font-size: 17px;
-        }
-
-        .latest-numbers {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .latest-numbers .ball {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 700;
-            background: #1e2a3a;
-            color: #e8edf5;
-            border: 1px solid #334155;
-        }
-
-        .latest-numbers .ball.ball-a {
-            background: #2d3748;
-            border-color: #4a5568;
-        }
-        .latest-numbers .ball.ball-b {
-            background: #2d3748;
-            border-color: #4a5568;
-        }
-        .latest-numbers .ball.ball-c {
-            background: #2d3748;
-            border-color: #4a5568;
-        }
-
-        .latest-sum {
-            font-size: 15px;
-            color: #8892a8;
-            margin-left: 4px;
-        }
-
-        .latest-sum strong {
-            color: #f7d44a;
-            font-weight: 600;
-        }
-
-        .latest-tags {
-            display: flex;
-            gap: 8px;
-            margin-left: 6px;
-        }
-
-        .tag {
-            padding: 2px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .tag-small {
-            background: #1a3a3a;
-            color: #5fc9c9;
-            border: 1px solid #2a5a5a;
-        }
-
-        .tag-big {
-            background: #3a2a1a;
-            color: #f7b84a;
-            border: 1px solid #5a4a2a;
-        }
-
-        .tag-odd {
-            background: #2a1a3a;
-            color: #c97ad4;
-            border: 1px solid #4a2a5a;
-        }
-
-        .tag-even {
-            background: #1a2a3a;
-            color: #5a9fd4;
-            border: 1px solid #2a4a5a;
-        }
-
-        .latest-right {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .btn-refresh {
-            background: #1e2a3a;
-            border: 1px solid #334155;
-            color: #e8edf5;
-            padding: 6px 18px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-refresh:hover {
-            background: #2a3a4a;
-            border-color: #4a6a8a;
-        }
-
-        .btn-refresh:active {
-            transform: scale(0.96);
-        }
-
-        .btn-refresh svg {
-            width: 14px;
-            height: 14px;
-            fill: #8892a8;
-        }
-
-        /* ===== 推荐区域 ===== */
-        .recommend-section {
-            background: #161b24;
-            border-radius: 16px;
-            padding: 18px 20px 20px;
-            margin-bottom: 20px;
-            border: 1px solid #262d3a;
-        }
-
-        .recommend-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .recommend-title {
-            font-size: 17px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .recommend-title .icon {
-            font-size: 20px;
-        }
-
-        .recommend-badge {
-            font-size: 12px;
-            background: #1a2a3a;
-            color: #5a9fd4;
-            padding: 2px 12px;
-            border-radius: 20px;
-            border: 1px solid #2a4a5a;
-        }
-
-        .recommend-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .recommend-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #0d1118;
-            border-radius: 12px;
-            padding: 12px 16px;
-            border: 1px solid #1f2835;
-            transition: all 0.2s;
-        }
-
-        .recommend-item:hover {
-            border-color: #334155;
-            background: #11171f;
-        }
-
-        .recommend-item .label {
-            font-size: 13px;
-            color: #8892a8;
-            font-weight: 500;
-            min-width: 60px;
-        }
-
-        .recommend-item .result {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .recommend-item .result .result-tag {
-            padding: 2px 16px;
-            border-radius: 20px;
-            font-size: 16px;
-        }
-
-        .result-tag.tag-big {
-            background: #3a2a1a;
-            color: #f7b84a;
-            border: 1px solid #5a4a2a;
-        }
-
-        .result-tag.tag-small {
-            background: #1a3a3a;
-            color: #5fc9c9;
-            border: 1px solid #2a5a5a;
-        }
-
-        .result-tag.tag-odd {
-            background: #2a1a3a;
-            color: #c97ad4;
-            border: 1px solid #4a2a5a;
-        }
-
-        .result-tag.tag-even {
-            background: #1a2a3a;
-            color: #5a9fd4;
-            border: 1px solid #2a4a5a;
-        }
-
-        .result-tag.tag-big-odd {
-            background: #3a2a1a;
-            color: #f7b84a;
-            border: 1px solid #5a4a2a;
-        }
-        .result-tag.tag-big-even {
-            background: #3a2a1a;
-            color: #f7b84a;
-            border: 1px solid #5a4a2a;
-        }
-        .result-tag.tag-small-odd {
-            background: #1a3a3a;
-            color: #5fc9c9;
-            border: 1px solid #2a5a5a;
-        }
-        .result-tag.tag-small-even {
-            background: #1a3a3a;
-            color: #5fc9c9;
-            border: 1px solid #2a5a5a;
-        }
-
-        .recommend-item .actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .btn-copy {
-            background: transparent;
-            border: 1px solid #2a3a4a;
-            color: #8892a8;
-            padding: 4px 14px;
-            border-radius: 16px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .btn-copy:hover {
-            background: #1a2a3a;
-            border-color: #4a7a9a;
-            color: #e8edf5;
-        }
-
-        .btn-copy:active {
-            transform: scale(0.94);
-        }
-
-        .btn-copy.copied {
-            border-color: #4ac97a;
-            color: #4ac97a;
-            background: #1a3a2a;
-        }
-
-        .btn-copy svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-        }
-
-        .recommend-empty {
-            color: #5a6a7a;
-            text-align: center;
-            padding: 20px 0;
-            font-size: 14px;
-        }
-
-        /* ===== 历史表格 ===== */
-        .history-section {
-            background: #161b24;
-            border-radius: 16px;
-            padding: 16px 16px 12px;
-            border: 1px solid #262d3a;
-            overflow: hidden;
-        }
-
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .history-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #e8edf5;
-        }
-
-        .history-count {
-            font-size: 12px;
-            color: #5a6a7a;
-        }
-
-        .table-wrap {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            min-width: 480px;
-        }
-
-        .history-table th {
-            text-align: center;
-            padding: 8px 4px;
-            color: #6a7a8a;
-            font-weight: 500;
-            font-size: 12px;
-            border-bottom: 1px solid #1f2835;
-            letter-spacing: 0.5px;
-        }
-
-        .history-table td {
-            text-align: center;
-            padding: 8px 4px;
-            border-bottom: 1px solid #141a22;
-            font-weight: 400;
-        }
-
-        .history-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .history-table .issue-cell {
-            color: #8892a8;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .history-table .num-cell {
-            font-weight: 600;
-            font-size: 15px;
-            color: #e8edf5;
-        }
-
-        .history-table .sum-cell {
-            font-weight: 600;
-            color: #f7d44a;
-        }
-
-        .history-table .size-cell {
-            font-weight: 500;
-        }
-
-        .history-table .size-cell.small {
-            color: #5fc9c9;
-        }
-        .history-table .size-cell.big {
-            color: #f7b84a;
-        }
-
-        .history-table .parity-cell {
-            font-weight: 500;
-        }
-        .history-table .parity-cell.odd {
-            color: #c97ad4;
-        }
-        .history-table .parity-cell.even {
-            color: #5a9fd4;
-        }
-
-        .history-table .history-ball {
-            display: inline-block;
-            width: 28px;
-            height: 28px;
-            line-height: 28px;
-            border-radius: 50%;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 600;
-            background: #1a2332;
-            color: #e8edf5;
-            border: 1px solid #2a3a4a;
-            margin: 0 1px;
-        }
-
-        .loading-text {
-            color: #5a6a7a;
-            text-align: center;
-            padding: 30px 0;
-            font-size: 14px;
-        }
-
-        .error-text {
-            color: #d45a5a;
-            text-align: center;
-            padding: 30px 0;
-            font-size: 14px;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: flex-end;
-            padding-top: 10px;
-            font-size: 12px;
-            color: #4a5a6a;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        /* ===== Toast ===== */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: #1a2a3a;
-            color: #e8edf5;
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-size: 14px;
-            border: 1px solid #2a4a5a;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-            opacity: 0;
-            transition: all 0.4s ease;
-            pointer-events: none;
-            z-index: 999;
-            white-space: nowrap;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* ===== 响应式 ===== */
-        @media (max-width: 640px) {
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 6px;
-            }
-            .header-left {
-                justify-content: center;
-            }
-            .header-right {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            .latest-card {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-                padding: 14px 16px;
-            }
-            .latest-left {
-                justify-content: center;
-                gap: 10px;
-            }
-            .latest-right {
-                justify-content: center;
-            }
-            .latest-numbers .ball {
-                width: 32px;
-                height: 32px;
-                font-size: 15px;
-            }
-            .recommend-item {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .recommend-item .result {
-                font-size: 17px;
-                flex-wrap: wrap;
-            }
-            .recommend-item .actions {
-                margin-left: auto;
-            }
-            .history-table {
-                font-size: 12px;
-                min-width: 400px;
-            }
-            .history-table .history-ball {
-                width: 24px;
-                height: 24px;
-                line-height: 24px;
-                font-size: 11px;
-            }
-            .toast {
-                font-size: 12px;
-                padding: 8px 18px;
-                bottom: 20px;
-            }
-            .logo {
-                font-size: 18px;
-            }
-            .header-right .time {
-                font-size: 12px;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .latest-left {
-                flex-direction: column;
-                gap: 6px;
-            }
-            .latest-numbers {
-                gap: 6px;
-            }
-            .latest-numbers .ball {
-                width: 28px;
-                height: 28px;
-                font-size: 13px;
-            }
-            .recommend-item {
-                padding: 10px 12px;
-            }
-            .recommend-item .result {
-                font-size: 15px;
-            }
-            .btn-copy {
-                padding: 2px 10px;
-                font-size: 11px;
-            }
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --bg: #0a0c10; --bg2: rgba(22,27,36,0.75); --text: #e8edf5;
+            --text2: #8892a8; --text3: #5a6a7a; --border: rgba(38,45,58,0.3);
+            --gold: #f7d44a; --success: #3fb950; --danger: #f85149;
+            --accent: #58a9ff; --card-bg: rgba(22,27,36,0.5);
+            --shadow: 0 8px 32px rgba(0,0,0,0.5); --radius: 16px; --radius-sm: 12px;
+        }
+        [data-theme="light"] {
+            --bg: #e8ecf1; --bg2: rgba(255,255,255,0.8); --text: #1a1a2e;
+            --text2: #5a6a7a; --text3: #8a9aaa; --border: rgba(180,190,200,0.4);
+            --card-bg: rgba(255,255,255,0.7); --shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+        body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 12px 10px 30px; transition: background 0.3s; position: relative; overflow-x: hidden; }
+        #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0.7; }
+        .app { max-width: 820px; margin:0 auto; position:relative; z-index:1; }
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+        }
+        .glass-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .flex { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .btn {
+            padding: 5px 14px; border-radius: 30px; font-size: 12px; font-weight: 600;
+            border: 1px solid var(--border); background: var(--bg2); color: var(--text);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover { transform: scale(0.96); opacity: 0.8; }
+        .btn-success { background: var(--success); color: #0a0c10; border-color: var(--success); }
+        .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .btn-sm { padding: 3px 10px; font-size: 11px; }
+        select {
+            background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+            padding: 5px 10px; border-radius: var(--radius-sm); font-size: 13px; outline: none;
+            cursor: pointer; max-width: 280px; min-width: 180px;
+        }
+        select:focus { border-color: var(--accent); }
+        .ball { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
+        .ball-0 { background: linear-gradient(135deg,#4a9eff,#2d7fd3); }
+        .ball-1 { background: linear-gradient(135deg,#4ac9a9,#2da88a); }
+        .ball-2 { background: linear-gradient(135deg,#f7b84a,#d4922e); }
+        .ball-3 { background: linear-gradient(135deg,#d46ac9,#b04da8); }
+        .ball-4 { background: linear-gradient(135deg,#ff6b6b,#d94444); }
+        .tag { padding: 2px 10px; border-radius: 30px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .tag-big { background: rgba(247,184,74,0.2); color: #f7b84a; border:1px solid rgba(247,184,74,0.15); }
+        .tag-small { background: rgba(74,201,169,0.2); color: #4ac9a9; border:1px solid rgba(74,201,169,0.15); }
+        .tag-odd { background: rgba(212,106,201,0.2); color: #d46ac9; border:1px solid rgba(212,106,201,0.15); }
+        .tag-even { background: rgba(74,158,255,0.2); color: #4a9eff; border:1px solid rgba(74,158,255,0.15); }
+        .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 8px; text-align: center; min-width: 60px; }
+        .stat-card .num { font-size: 18px; font-weight:700; color: var(--gold); }
+        .stat-card .label { font-size: 10px; color: var(--text3); }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+        @media (max-width:600px){ .grid-4 { grid-template-columns:1fr 1fr; } }
+        .result-box { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 12px; border: 1px solid var(--border); text-align: center; margin-top: 4px; }
+        .result-box .big { font-size: 24px; font-weight: 700; color: var(--gold); }
+        .result-box .sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+        .result-box .kill { color: var(--danger); font-weight: 700; font-size: 18px; }
+        .result-box .buy { color: var(--success); font-weight: 700; font-size: 18px; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--card-bg); backdrop-filter: blur(18px); color: var(--text); padding: 6px 18px; border-radius: 30px; font-size: 13px; border: 1px solid var(--border); opacity: 0; transition: all 0.4s; z-index: 999; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .table-wrap { overflow-x:auto; margin-top:4px; }
+        table { width:100%; border-collapse:collapse; font-size:12px; }
+        th, td { padding:4px 6px; text-align:center; border-bottom:1px solid var(--border); }
+        th { color: var(--text3); font-size:11px; }
+        .status-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+        .status-badge.hit { background:rgba(63,185,80,0.2); color:var(--success); }
+        .status-badge.miss { background:rgba(248,81,73,0.2); color:var(--danger); }
+        .countdown-timer { font-size: 20px; font-weight:700; background: linear-gradient(135deg,#f7d44a,#f7971e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .progress-bar { width:100%; height:3px; background:var(--border); border-radius:4px; margin-top:4px; overflow:hidden; }
+        .progress-bar .fill { height:100%; background:linear-gradient(90deg,#f7971e,#ffd200); border-radius:4px; transition:width 1s; }
+        .algo-count { font-size: 11px; color: var(--text3); margin-left: 4px; }
+        .input-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .input-group input { width: 50px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); text-align: center; font-size: 16px; }
+        .input-group label { font-size: 12px; color: var(--text2); }
+        .manual-panel { display: none; }
+        .auto-status { font-size: 11px; color: var(--text3); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+        .auto-status:hover { color: var(--gold); }
     </style>
 </head>
 <body>
+<canvas id="bgCanvas"></canvas>
+<div id="toast" class="toast">已复制</div>
+<div class="app">
 
-    <div class="app-container">
-        <!-- ===== Toast ===== -->
-        <div id="toast" class="toast">已复制</div>
-
-        <!-- ===== 顶部 ===== -->
-        <header class="header">
-            <div class="header-left">
-                <span class="logo">PC28 <span class="logo-sub">智能预测</span></span>
-            </div>
-            <div class="header-right">
-                <span class="time" id="headerTime">--:--</span>
-                <a href="https://t.me/ero6v" target="_blank" class="tg-link" rel="noopener">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.1-.2-.11-.06-.27-.04-.39-.02-.17.03-2.86 1.82-3.19 2.02-.3.18-.57.27-.82.27-.27 0-.78-.15-1.16-.27-.48-.15-.86-.23-.83-.48.02-.13.2-.27.55-.41 2.1-.91 3.5-1.51 4.2-1.8 2-.86 2.42-.94 2.69-.94.06 0 .17.01.25.08.06.05.1.13.09.23-.04.15-.06.18-.16.18z"/></svg>
-                    @ero6v
-                </a>
-            </div>
-        </header>
-
-        <!-- ===== 最新一期 ===== -->
-        <div class="latest-card" id="latestCard">
-            <div class="latest-left">
-                <div class="latest-issue">
-                    期号 <strong id="latestIssue">------</strong>
-                </div>
-                <div class="latest-numbers" id="latestNumbers">
-                    <span class="ball ball-a">-</span>
-                    <span class="ball ball-b">-</span>
-                    <span class="ball ball-c">-</span>
-                </div>
-                <div class="latest-sum">
-                    和值 <strong id="latestSum">--</strong>
-                </div>
-                <div class="latest-tags" id="latestTags">
-                    <span class="tag tag-small">小</span>
-                    <span class="tag tag-even">双</span>
-                </div>
-            </div>
-            <div class="latest-right">
-                <button class="btn-refresh" id="btnRefresh" title="手动刷新数据">
-                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                    刷新
-                </button>
-            </div>
-        </div>
-
-        <!-- ===== 推荐区域 ===== -->
-        <div class="recommend-section" id="recommendSection">
-            <div class="recommend-header">
-                <div class="recommend-title">
-                    <span class="icon">🧠</span> AI 推荐
-                    <span class="recommend-badge" id="recommendBadge">2 个</span>
-                </div>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <button class="btn-copy" id="btnCopyAll" style="border-color:#2a4a5a; color:#5a9fd4; padding:4px 16px;">
-                        📋 全部复制
-                    </button>
-                </div>
-            </div>
-            <div class="recommend-list" id="recommendList">
-                <div class="recommend-empty">加载数据中...</div>
-            </div>
-        </div>
-
-        <!-- ===== 历史数据 ===== -->
-        <div class="history-section">
-            <div class="history-header">
-                <span class="history-title">📊 历史走势</span>
-                <span class="history-count" id="historyCount">共 0 期</span>
-            </div>
-            <div class="table-wrap">
-                <table class="history-table" id="historyTable">
-                    <thead>
-                        <tr>
-                            <th>期号</th>
-                            <th>A</th>
-                            <th>B</th>
-                            <th>C</th>
-                            <th>和值</th>
-                            <th>大小</th>
-                            <th>单双</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyBody">
-                        <tr><td colspan="7" class="loading-text">加载中...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="status-bar">
-                <span id="statusData">数据来源：加载中...</span>
-                <span id="statusTime">更新：--</span>
+    <!-- 顶部 -->
+    <div class="glass" style="padding:8px 12px;">
+        <div class="flex-between">
+            <span style="font-size:18px;font-weight:800;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🎯 PC28 算法库</span>
+            <div class="flex">
+                <span id="headerTime" style="font-size:12px;color:var(--text2);">--:--</span>
+                <button class="btn btn-sm" id="themeToggle">🌓</button>
+                <button class="btn btn-sm btn-success" id="refreshBtn">🔄</button>
+                <span class="auto-status" id="autoStatus">▶️ 30s</span>
             </div>
         </div>
     </div>
 
-    <script>
-        // ============================================================
-        //  配置
-        // ============================================================
-        const CONFIG = {
-            HISTORY_URL: 'https://pc28.help/api/kj.json?nbr=20',
-            // 备用接口（暂时不用，但保留）
-            BACKUP_URL: 'https://pc28.help/api/yl.json',
-            // 用于判断走势混乱的阈值（最近8期大小+单双变化次数 ≥ 此值则混乱）
-            CHAOS_THRESHOLD: 6,
-            // 最大推荐数
-            MAX_RECOMMEND: 3,
-            // 默认推荐数（不混乱时）
-            DEFAULT_RECOMMEND_COUNT: 2,
-        };
+    <!-- 算法选择 -->
+    <div class="glass">
+        <div class="flex" style="justify-content:space-between;flex-wrap:wrap;gap:4px;">
+            <div class="flex" style="flex:1;min-width:200px;">
+                <span style="font-size:13px;color:var(--text2);font-weight:600;">算法：</span>
+                <select id="algoSelect"></select>
+                <span class="algo-count" id="algoCount"></span>
+            </div>
+            <div style="font-size:12px;color:var(--text3);" id="dataStatus">等待数据...</div>
+        </div>
+    </div>
 
-        // ============================================================
-        //  状态
-        // ============================================================
-        let allData = []; // 完整历史数据（最新在前）
-        let latestItem = null; // 最新一期
-        let isRefreshing = false;
+    <!-- 最新开奖 -->
+    <div class="glass">
+        <div class="glass-title"><span>📊 最新开奖</span><span id="latestPeriod" style="font-size:13px;color:var(--text2);">--</span></div>
+        <div class="flex" style="justify-content:center;gap:10px;flex-wrap:wrap;">
+            <div class="flex" id="latestBalls">
+                <span class="ball ball-0">-</span>
+                <span class="ball ball-0">-</span>
+                <span class="ball ball-0">-</span>
+            </div>
+            <div style="font-size:16px;font-weight:700;color:var(--gold);" id="latestSum">--</div>
+            <div id="latestTags"><span class="tag tag-small">小</span><span class="tag tag-even">双</span></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;font-size:13px;color:var(--text3);margin-top:4px;">
+            <span>⏳ 下期 <span id="countdownNext">--:--</span></span>
+            <span class="countdown-timer" id="countdownTimer">--:--</span>
+        </div>
+        <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
+    </div>
 
-        // ============================================================
-        //  DOM 引用
-        // ============================================================
-        const $ = id => document.getElementById(id);
-        const latestIssue = $('latestIssue');
-        const latestNumbers = $('latestNumbers');
-        const latestSum = $('latestSum');
-        const latestTags = $('latestTags');
-        const historyBody = $('historyBody');
-        const historyCount = $('historyCount');
-        const recommendList = $('recommendList');
-        const recommendBadge = $('recommendBadge');
-        const statusData = $('statusData');
-        const statusTime = $('statusTime');
-        const headerTime = $('headerTime');
-        const toastEl = $('toast');
-        let toastTimer = null;
+    <!-- 手动输入 -->
+    <div class="glass manual-panel" id="manualPanel">
+        <div class="glass-title"><span>📝 手动输入</span></div>
+        <div class="flex" style="justify-content:center;gap:6px;flex-wrap:wrap;">
+            <div class="input-group">
+                <label>最新一期</label>
+                <input id="m1" type="number" min="0" max="9" placeholder="A" value="8">
+                <input id="m2" type="number" min="0" max="9" placeholder="B" value="1">
+                <input id="m3" type="number" min="0" max="9" placeholder="C" value="9">
+            </div>
+            <div class="input-group">
+                <label>上一期</label>
+                <input id="m4" type="number" min="0" max="9" placeholder="A" value="7">
+                <input id="m5" type="number" min="0" max="9" placeholder="B" value="4">
+                <input id="m6" type="number" min="0" max="9" placeholder="C" value="0">
+            </div>
+            <button class="btn btn-success btn-sm" id="manualCalcBtn">计算</button>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px;">💡 接口失败时手动输入</div>
+    </div>
 
-        // ============================================================
-        //  工具函数
-        // ============================================================
-        function getNowStr() {
-            const d = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
+    <!-- 预测结果 -->
+    <div class="glass">
+        <div class="glass-title"><span>🔮 预测结果</span><span id="resultAlgo" style="font-size:11px;color:var(--text3);">--</span></div>
+        <div id="resultContent" class="result-box">
+            <div class="big" id="resultMain">等待数据...</div>
+            <div class="sub" id="resultSub"></div>
+        </div>
+        <div class="flex" style="margin-top:6px;">
+            <button class="btn btn-sm" id="copyResultBtn">📋 复制</button>
+            <span id="hitStatus" style="font-size:13px;color:var(--text3);margin-left:auto;"></span>
+        </div>
+    </div>
 
-        function showToast(msg = '已复制', duration = 1800) {
-            toastEl.textContent = msg;
-            toastEl.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, duration);
-        }
+    <!-- 统计 -->
+    <div class="glass">
+        <div class="glass-title"><span>📈 统计</span></div>
+        <div class="grid-4">
+            <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">预测</div></div>
+            <div class="stat-card"><div class="num" id="statHit">0</div><div class="label">命中</div></div>
+            <div class="stat-card"><div class="num" id="statRate">0%</div><div class="label">命中率</div></div>
+            <div class="stat-card"><div class="num" id="statStreak">0</div><div class="label">连胜</div></div>
+        </div>
+    </div>
 
-        // 从期号字符串提取数字部分（用于排序）
-        function parseIssueNum(issueStr) {
-            return parseInt(issueStr.replace(/[^0-9]/g, ''), 10) || 0;
-        }
+    <!-- 历史 -->
+    <div class="glass">
+        <div class="glass-title"><span>📋 记录</span><button class="btn btn-sm btn-danger" id="clearHistoryBtn">清空</button></div>
+        <div class="table-wrap">
+            <table><thead><tr><th>期号</th><th>推荐</th><th>实际</th><th>结果</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px 0;">暂无</td></tr></tbody>
+            </table>
+        </div>
+    </div>
 
-        // 判断大小 —— 修改为 0-13 小，14及以上 大（解决预测值超出27的问题）
-        function getSize(sum) {
-            const num = Number(sum);
-            if (num >= 0 && num <= 13) return '小';
-            if (num >= 14) return '大';
-            return '--';
-        }
+</div>
 
-        // 判断单双
-        function getParity(sum) {
-            const num = Number(sum);
-            if (isNaN(num)) return '--';
-            return num % 2 === 0 ? '双' : '单';
-        }
+<script>
+// ============================================================
+// 120算法 · 简洁名称(无数学符号)
+// ============================================================
+function $(id){return document.getElementById(id);}
+function showToast(msg,dur=1500){
+    let el=$('toast');
+    if(!el){el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);}
+    el.textContent=msg;el.classList.add('show');
+    clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+function getCombo(n){ let size = n >= 14 ? "大" : "小"; let parity = n % 2 === 0 ? "双" : "单"; return size + parity; }
+function getBallColor(n){ if(n<=4)return 'ball-0'; if(n<=9)return 'ball-1'; if(n<=14)return 'ball-2'; if(n<=19)return 'ball-3'; return 'ball-4'; }
 
-        // 获取组合标签 (大/小 + 单/双)
-        function getCombination(sum) {
-            const s = getSize(sum);
-            const p = getParity(sum);
-            if (s === '--' || p === '--') return '--';
-            return s + p;
-        }
+const API_URL = "https://pc28.help/api/kj.json?nbr=300";
+const ALL_COMBOS = ["小单","小双","大单","大双"];
+const DOUBLE_MAP = {0:['小双','大单'],1:['小单','大双'],2:['小双','大双'],3:['小单','大单']};
+const OPPOSITE = {"小单":"大双","小双":"大单","大单":"小双","大双":"小单"};
 
-        // 获取CSS类名
-        function getSizeClass(size) { return size === '大' ? 'tag-big' : 'tag-small'; }
+// ---------- 动态背景 ----------
+function initBg(){
+    const canvas=document.getElementById('bgCanvas');
+    const ctx=canvas.getContext('2d');
+    let w,h; const particles=[]; const COUNT=120;
+    function resize(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; }
+    window.addEventListener('resize',resize); resize();
+    class Particle{
+        constructor(){ this.reset(); }
+        reset(){ this.x=Math.random()*w; this.y=Math.random()*h; this.size=Math.random()*3+1.5; this.speedX=(Math.random()-0.5)*0.4; this.speedY=(Math.random()-0.5)*0.4; this.opacity=Math.random()*0.4+0.2; this.hue=Math.random()*60+30; this.pulse=Math.random()*Math.PI*2; }
+        update(){ this.x+=this.speedX; this.y+=this.speedY; if(this.x<0||this.x>w)this.speedX*=-1; if(this.y<0||this.y>h)this.speedY*=-1; this.pulse+=0.02; }
+        draw(){ let glow=Math.sin(this.pulse)*0.3+0.7; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fillStyle=`hsla(${this.hue},100%,70%,${this.opacity*glow})`; ctx.fill(); let grad=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size*5); grad.addColorStop(0,`hsla(${this.hue},100%,70%,${0.1*glow})`); grad.addColorStop(1,`hsla(${this.hue},100%,70%,0)`); ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(this.x,this.y,this.size*5,0,Math.PI*2); ctx.fill(); }
+    }
+    for(let i=0;i<COUNT;i++) particles.push(new Particle());
+    function drawLines(){
+        for(let i=0;i<particles.length;i++){ for(let j=i+1;j<particles.length;j++){ let dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y; let dist=Math.sqrt(dx*dx+dy*dy); if(dist<100){ ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); let alpha=(1-dist/100)*0.12; ctx.strokeStyle=`rgba(255,215,0,${alpha})`; ctx.lineWidth=0.6; ctx.stroke(); } } }
+    }
+    function animate(){ ctx.clearRect(0,0,w,h); for(let p of particles){ p.update(); p.draw(); } drawLines(); requestAnimationFrame(animate); }
+    animate();
+}
 
-        function getParityClass(parity) { return parity === '单' ? 'tag-odd' : 'tag-even'; }
+// ---------- 120算法(纯净名称) ----------
+function buildAlgorithms(){
+    let algos = {};
+    let id = 0;
 
-        function getCombinationClass(comb) {
-            const map = {
-                '大单': 'tag-big-odd',
-                '大双': 'tag-big-even',
-                '小单': 'tag-small-odd',
-                '小双': 'tag-small-even'
-            };
-            return map[comb] || '';
-        }
+    // 核心算法列表(用简洁中文名)
+    const coreList = [
+        { key: 'log10_kill', name: '对数杀组法', type: 'kill', calc: (d)=>{ let L=d[0].sum; let v=Math.log10(L+1)*((L%10)+1); let r=Math.floor(v)%4; let k={0:'小单',1:'小双',2:'大单',3:'大双'}[r]; return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)}; } },
+        { key: 'sin_kill', name: '正弦杀组法', type: 'kill', calc: (d)=>{ let L=d[0].sum; let v=Math.abs(Math.sin(L+1))*((L%10)+1); let r=Math.floor(v)%4; let k={0:'小单',1:'小双',2:'大单',3:'大双'}[r]; return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)}; } },
+        { key: 'cos_kill', name: '余弦杀组法', type: 'kill', calc: (d)=>{ let L=d[0].sum; let v=Math.abs(Math.cos(L+1))*((L%10)+1); let r=Math.floor(v)%4; let k={0:'小单',1:'小双',2:'大单',3:'大双'}[r]; return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)}; } },
+        { key: 'tan_kill', name: '正切杀组法', type: 'kill', calc: (d)=>{ let L=d[0].sum; let v=Math.abs(Math.tan(L+1))*((L%10)+1); let r=Math.floor(v)%4; let k={0:'小单',1:'小双',2:'大单',3:'大双'}[r]; return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)}; } },
+        { key: 'sqrt_kill', name: '开方杀组法', type: 'kill', calc: (d)=>{ let L=d[0].sum; let v=Math.sqrt(L+1)*((L%10)+1); let r=Math.floor(v)%4; let k={0:'小单',1:'小双',2:'大单',3:'大双'}[r]; return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)}; } },
+        { key: 'cross_double', name: '上下球交叉法', type: 'double', calc: (d)=>{ let b1=d[0].balls,b2=d[1].balls; let a=b1[0]+b2[0],b=b1[1]+b2[1],c=b1[2]+b2[2]; let r1=getCombo(a),r2=getCombo(b),r3=getCombo(c); let cnt={小单:0,小双:0,大单:0,大双:0}; cnt[r1]++;cnt[r2]++;cnt[r3]++; let sorted=Object.entries(cnt).sort((x,y)=>y[1]-x[1]); return {type:'double', result: sorted.slice(0,2).map(x=>x[0])}; } },
+        { key: 'sin_double', name: '正弦双组法', type: 'double', calc: (d)=>{ let L=d[0].sum; let v=Math.abs(Math.sin(L+1))*((L%10)+1); let r=Math.floor(v)%4; return {type:'double', result: DOUBLE_MAP[r]||['小单','大双']}; } },
+        { key: 'mod7_double', name: '七余双组法', type: 'double', calc: (d)=>{ let r=d[0].sum%7; let map={0:['小单','小双'],1:['小单','小双'],2:['小双','大双'],3:['小双','大双'],4:['大单','大双'],5:['大单','大双'],6:['小单','大单']}; return {type:'double', result: map[r]||['小单','大双']}; } },
+        { key: 'trend5_double', name: '五期趋势双组', type: 'double', calc: (d)=>{ if(d.length<5)return {type:'double',result:['小单','大双']}; let cnt={小单:0,小双:0,大单:0,大双:0}; for(let i=0;i<5;i++) cnt[d[i].combo]++; let max=Math.max(...Object.values(cnt)); let hot=Object.keys(cnt).filter(k=>cnt[k]===max); let kill=hot[0]||'小单'; let res=ALL_COMBOS.filter(c=>c!==kill).slice(0,2); if(res.length<2)res=['小单','大双']; return {type:'double', result: res}; } },
+        { key: 'opposite_double', name: '对宫双组法', type: 'double', calc: (d)=>{ let combo=d[0].combo; let opp=OPPOSITE[combo]||'大双'; let res=[opp, ALL_COMBOS.find(c=>c!==opp&&c!==combo)||'小单']; return {type:'double', result: res.slice(0,2)}; } }
+    ];
 
-        // ============================================================
-        //  核心算法
-        // ============================================================
-        /**
-         * 使用用户算法预测第 N 期
-         * @param {Array} history 历史数据数组，按时间降序（最新在前）
-         * @param {number} nIndex 预测第几期（0 = 最新一期之后的第一期）
-         * @param {object} options 提取规则配置
-         * @returns {object|null} { sum, size, parity, combination, detail }
-         */
-        function predictWithAlgorithm(history, nIndex = 0, options = null) {
-            // 默认提取规则 (用户标准算法)
-            const defaultRule = {
-                xSource: 'tens', // N-1期: 'tens' 十位, 'units' 个位
-                ySource: 'first', // N-2期: 'first' 第1位, 'second' 第2位, 'third' 第3位
-                zSource: 'third', // N-3期: 'first' 第1位, 'second' 第2位, 'third' 第3位
-            };
-            const rule = { ...defaultRule, ...options };
+    for(let item of coreList){
+        algos[item.key] = { name: item.name, type: item.type, calc: item.calc };
+        id++;
+    }
 
-            // 需要 N-1, N-2, N-3 期数据
-            const idx1 = nIndex + 0; // N-1
-            const idx2 = nIndex + 1; // N-2
-            const idx3 = nIndex + 2; // N-3
+    // 变体算法(编号命名，不带数学符号)
+    let counter = 1;
+    const funcs = [
+        { fn: Math.sin, abs: true, label: '正弦' },
+        { fn: Math.cos, abs: true, label: '余弦' },
+        { fn: Math.tan, abs: true, label: '正切' },
+        { fn: Math.log10, abs: false, label: '对数' },
+        { fn: Math.sqrt, abs: false, label: '开方' },
+        { fn: Math.log, abs: false, label: '自然对数' }
+    ];
+    const divs = [3,4,5,6,7,8,9,10,13,17,21];
+    const coeffs = [0.382,0.5,0.618,0.7,0.8,1.0,1.2,1.5,2.0,2.5,3.0];
 
-            if (idx1 >= history.length || idx2 >= history.length || idx3 >= history.length) {
-                return null; // 数据不足
-            }
-
-            const n1 = history[idx1];
-            const n2 = history[idx2];
-            const n3 = history[idx3];
-
-            // 提取数字
-            let X, Y, Z;
-
-            // X: 从 N-1 期提取
-            if (rule.xSource === 'tens') {
-                // 十位数：三位数的中间一位（B）
-                X = n1.b;
-            } else { // 'units'
-                // 个位数：三位数的最后一位（C）
-                X = n1.c;
-            }
-
-            // Y: 从 N-2 期提取
-            const digits2 = [n2.a, n2.b, n2.c];
-            if (rule.ySource === 'first') Y = digits2[0];
-            else if (rule.ySource === 'second') Y = digits2[1];
-            else if (rule.ySource === 'third') Y = digits2[2];
-            else Y = digits2[0];
-
-            // Z: 从 N-3 期提取
-            const digits3 = [n3.a, n3.b, n3.c];
-            if (rule.zSource === 'first') Z = digits3[0];
-            else if (rule.zSource === 'second') Z = digits3[1];
-            else if (rule.zSource === 'third') Z = digits3[2];
-            else Z = digits3[2];
-
-            // 计算中间值
-            const mid = X + Y + Z;
-
-            // N-1 期最终结果（和值）
-            const n1Sum = n1.sum;
-
-            // 预测值
-            const predSum = mid + n1Sum;
-
-            // 判断形态
-            const size = getSize(predSum);
-            const parity = getParity(predSum);
-            const combination = size + parity;
-
-            return {
-                sum: predSum,
-                size: size,
-                parity: parity,
-                combination: combination,
-                detail: {
-                    X,
-                    Y,
-                    Z,
-                    mid,
-                    n1Sum,
-                    n1Issue: n1.issue,
-                    n2Issue: n2.issue,
-                    n3Issue: n3.issue,
-                }
-            };
-        }
-
-        /**
-         * 获取多个不同的推荐
-         * @param {Array} history 历史数据
-         * @param {number} count 需要几个推荐 (2 或 3)
-         * @param {boolean} isChaos 是否混乱
-         * @returns {Array} 推荐结果数组
-         */
-        function getRecommendations(history, count = 2, isChaos = false) {
-            if (history.length < 4) return [];
-
-            // 定义算法变体
-            const variants = [
-                // 变体0: 标准算法 (推荐一)
-                { name: '推荐一', rule: { xSource: 'tens', ySource: 'first', zSource: 'third' } },
-                // 变体1: 推荐二
-                { name: '推荐二', rule: { xSource: 'units', ySource: 'second', zSource: 'first' } },
-                // 变体2: 推荐三
-                { name: '推荐三', rule: { xSource: 'tens', ySource: 'third', zSource: 'second' } },
-                // 额外变体 (备用)
-                { name: '推荐四', rule: { xSource: 'units', ySource: 'first', zSource: 'second' } },
-                { name: '推荐五', rule: { xSource: 'tens', ySource: 'second', zSource: 'first' } },
-                { name: '推荐六', rule: { xSource: 'units', ySource: 'third', zSource: 'third' } },
-            ];
-
-            const results = [];
-            const usedCombinations = new Set();
-
-            // 先计算所有变体的结果
-            const allResults = variants.map(v => {
-                const res = predictWithAlgorithm(history, 0, v.rule);
-                return { ...res, variantName: v.name, rule: v.rule };
-            }).filter(r => r !== null && r.combination !== '--');
-
-            // 去重（保留第一个出现的）
-            const uniqueResults = [];
-            const seen = new Set();
-            for (const r of allResults) {
-                const key = r.combination;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    uniqueResults.push(r);
-                }
-            }
-
-            // 推荐一: 使用标准算法 (变体0)
-            const stdResult = uniqueResults.find(r => r.variantName === '推荐一');
-            if (!stdResult) return [];
-
-            const finalResults = [];
-            // 先加入推荐一
-            finalResults.push({
-                label: '推荐一',
-                combination: stdResult.combination,
-                sum: stdResult.sum,
-                size: stdResult.size,
-                parity: stdResult.parity,
-                detail: stdResult.detail,
-                rule: stdResult.rule,
-                isPrimary: true,
-            });
-            usedCombinations.add(stdResult.combination);
-
-            // 从剩余结果中挑选与已有不同的
-            const candidates = uniqueResults.filter(r => r.variantName !== '推荐一' && !usedCombinations.has(r
-            .combination));
-
-            // 按顺序取需要的数量
-            const need = count - 1;
-            let taken = 0;
-            for (const c of candidates) {
-                if (taken >= need) break;
-                if (!usedCombinations.has(c.combination)) {
-                    finalResults.push({
-                        label: c.variantName,
-                        combination: c.combination,
-                        sum: c.sum,
-                        size: c.size,
-                        parity: c.parity,
-                        detail: c.detail,
-                        rule: c.rule,
-                        isPrimary: false,
-                    });
-                    usedCombinations.add(c.combination);
-                    taken++;
-                }
-            }
-
-            // 如果还是不够，从所有结果中补充（但必须不同）
-            if (taken < need) {
-                for (const r of uniqueResults) {
-                    if (taken >= need) break;
-                    if (!usedCombinations.has(r.combination) && r.variantName !== '推荐一') {
-                        finalResults.push({
-                            label: r.variantName,
-                            combination: r.combination,
-                            sum: r.sum,
-                            size: r.size,
-                            parity: r.parity,
-                            detail: r.detail,
-                            rule: r.rule,
-                            isPrimary: false,
-                        });
-                        usedCombinations.add(r.combination);
-                        taken++;
-                    }
-                }
-            }
-
-            // 如果还是不够，尝试用算法生成不同的组合（但必须基于算法）
-            if (taken < need) {
-                const offsets = [1, 2, 3, 4];
-                for (const off of offsets) {
-                    if (taken >= need) break;
-                    const res = predictWithAlgorithm(history, off, { xSource: 'tens', ySource: 'first',
-                        zSource: 'third' });
-                    if (res && res.combination !== '--' && !usedCombinations.has(res.combination)) {
-                        finalResults.push({
-                            label: `推荐${finalResults.length + 1}`,
-                            combination: res.combination,
-                            sum: res.sum,
-                            size: res.size,
-                            parity: res.parity,
-                            detail: res.detail,
-                            rule: { offset: off, ...{ xSource: 'tens', ySource: 'first', zSource: 'third' } },
-                            isPrimary: false,
-                        });
-                        usedCombinations.add(res.combination);
-                        taken++;
-                    }
-                }
-            }
-
-            return finalResults;
-        }
-
-        // ============================================================
-        //  判断走势是否混乱
-        // ============================================================
-        function isTrendChaotic(history, lookback = 8) {
-            if (history.length < lookback + 1) return false;
-
-            const recent = history.slice(0, lookback);
-            let sizeChanges = 0;
-            let parityChanges = 0;
-
-            for (let i = 1; i < recent.length; i++) {
-                if (recent[i].size !== recent[i - 1].size) sizeChanges++;
-                if (recent[i].parity !== recent[i - 1].parity) parityChanges++;
-            }
-
-            const totalChanges = sizeChanges + parityChanges;
-            return totalChanges >= CONFIG.CHAOS_THRESHOLD;
-        }
-
-        // ============================================================
-        //  数据获取
-        // ============================================================
-        async function fetchData() {
-            // 使用主接口 kj.json
-            const url = CONFIG.HISTORY_URL;
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' },
-                    cache: 'no-cache',
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                return data;
-            } catch (err) {
-                console.warn('主接口失败，尝试备用接口...', err);
-                // 备用接口 yl.json 数据结构不同，暂时只作为兜底，但可能无法解析
-                // 这里简单抛出错误，让上层处理
-                throw new Error('数据获取失败，请检查网络或稍后重试');
-            }
-        }
-
-        /**
-         * 解析接口返回的数据 —— 适配 kj.json 的实际字段
-         */
-        function parseApiData(raw) {
-            let list = null;
-
-            if (Array.isArray(raw)) {
-                list = raw;
-            } else if (raw && typeof raw === 'object') {
-                // 优先取 data 字段（kj.json 的结构）
-                if (Array.isArray(raw.data)) {
-                    list = raw.data;
-                } else if (Array.isArray(raw.list)) {
-                    list = raw.list;
-                } else if (Array.isArray(raw.result)) {
-                    list = raw.result;
-                } else {
-                    // 兜底：取第一个数组属性
-                    for (const key of Object.keys(raw)) {
-                        if (Array.isArray(raw[key]) && raw[key].length > 0) {
-                            list = raw[key];
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!list || list.length === 0) {
-                throw new Error('数据格式无法识别或为空');
-            }
-
-            // 标准化每条数据 —— 适配 kj.json 的字段
-            return list.map(item => {
-                // 期号: nbr
-                let issue = item.nbr || item.issue || item.period || '';
-                issue = String(issue).trim();
-
-                // 三个数字: 从 "8+3+6" 解析
-                let a = null, b = null, c = null;
-                const numberStr = item.number || item.numStr || '';
-                if (numberStr) {
-                    const parts = String(numberStr).split('+').map(Number);
-                    if (parts.length === 3) {
-                        a = parts[0];
-                        b = parts[1];
-                        c = parts[2];
-                    }
-                }
-
-                // 如果 number 字段解析失败，尝试单独字段
-                if (a === null || b === null || c === null) {
-                    a = item.a ?? item.num1 ?? null;
-                    b = item.b ?? item.num2 ?? null;
-                    c = item.c ?? item.num3 ?? null;
-                }
-
-                // 确保是数字
-                a = Number(a);
-                b = Number(b);
-                c = Number(c);
-
-                // 和值: num
-                let sum = item.num || item.sum || item.total || null;
-                if (sum === null || sum === undefined) {
-                    if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
-                        sum = a + b + c;
-                    } else {
-                        sum = 0;
-                    }
-                }
-                sum = Number(sum);
-
-                // 大小单双: 从 combination 获取，或自行计算
-                let size = '';
-                let parity = '';
-                if (item.combination) {
-                    const comb = String(item.combination);
-                    if (comb.includes('大')) size = '大';
-                    else if (comb.includes('小')) size = '小';
-                    if (comb.includes('单')) parity = '单';
-                    else if (comb.includes('双')) parity = '双';
-                }
-                if (!size) size = getSize(sum);
-                if (!parity) parity = getParity(sum);
-
-                return {
-                    issue: String(issue),
-                    a, b, c,
-                    sum,
-                    size: String(size),
-                    parity: String(parity),
-                    _raw: item,
+    for(let f of funcs){
+        for(let div of divs){
+            for(let coeff of coeffs){
+                if(counter > 110) break;
+                let nameKill = `杀组法${counter}`;
+                algos['kill_'+counter] = {
+                    name: nameKill,
+                    type: 'kill',
+                    calc: (function(fn, abs, div, coeff){
+                        return function(data){
+                            let L=data[0].sum;
+                            let v = fn(L+1);
+                            if(abs) v = Math.abs(v);
+                            let intPart = Math.floor(v * coeff) % div;
+                            let k = {0:'小单',1:'小双',2:'大单',3:'大双'}[intPart % 4] || '小单';
+                            return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)};
+                        };
+                    })(f.fn, f.abs, div, coeff)
                 };
-            }).filter(item => item.issue && !isNaN(item.a) && !isNaN(item.b) && !isNaN(item.c));
-        }
-
-        // ============================================================
-        //  渲染
-        // ============================================================
-
-        // 渲染最新一期
-        function renderLatest(item) {
-            if (!item) {
-                latestIssue.textContent = '------';
-                latestNumbers.innerHTML = `
-                    <span class="ball ball-a">-</span>
-                    <span class="ball ball-b">-</span>
-                    <span class="ball ball-c">-</span>
-                `;
-                latestSum.textContent = '--';
-                latestTags.innerHTML = `<span class="tag tag-small">小</span><span class="tag tag-even">双</span>`;
-                return;
-            }
-
-            latestIssue.textContent = item.issue;
-            latestNumbers.innerHTML = `
-                <span class="ball ball-a">${item.a}</span>
-                <span class="ball ball-b">${item.b}</span>
-                <span class="ball ball-c">${item.c}</span>
-            `;
-            latestSum.textContent = item.sum;
-
-            const sizeCls = getSizeClass(item.size);
-            const parityCls = getParityClass(item.parity);
-            latestTags.innerHTML = `
-                <span class="tag ${sizeCls}">${item.size}</span>
-                <span class="tag ${parityCls}">${item.parity}</span>
-            `;
-        }
-
-        // 渲染历史表格
-        function renderHistory(data) {
-            if (!data || data.length === 0) {
-                historyBody.innerHTML = `<tr><td colspan="7" class="loading-text">暂无数据</td></tr>`;
-                historyCount.textContent = '共 0 期';
-                return;
-            }
-
-            let html = '';
-            const showCount = Math.min(data.length, 30);
-            for (let i = 0; i < showCount; i++) {
-                const item = data[i];
-                const sizeCls = item.size === '大' ? 'big' : 'small';
-                const parityCls = item.parity === '单' ? 'odd' : 'even';
-                html += `
-                    <tr>
-                        <td class="issue-cell">${item.issue}</td>
-                        <td class="num-cell"><span class="history-ball">${item.a}</span></td>
-                        <td class="num-cell"><span class="history-ball">${item.b}</span></td>
-                        <td class="num-cell"><span class="history-ball">${item.c}</span></td>
-                        <td class="sum-cell">${item.sum}</td>
-                        <td class="size-cell ${sizeCls}">${item.size}</td>
-                        <td class="parity-cell ${parityCls}">${item.parity}</td>
-                    </tr>
-                `;
-            }
-            historyBody.innerHTML = html;
-            historyCount.textContent = `共 ${data.length} 期 (显示最近 ${showCount} 期)`;
-        }
-
-        // 渲染推荐
-        function renderRecommendations(history) {
-            if (!history || history.length < 4) {
-                recommendList.innerHTML = `<div class="recommend-empty">数据不足，无法生成推荐 (需要至少4期数据)</div>`;
-                recommendBadge.textContent = '0 个';
-                return;
-            }
-
-            // 判断走势是否混乱
-            const chaotic = isTrendChaotic(history);
-            const recommendCount = chaotic ? 3 : CONFIG.DEFAULT_RECOMMEND_COUNT;
-
-            // 获取推荐
-            const recs = getRecommendations(history, recommendCount, chaotic);
-
-            if (!recs || recs.length === 0) {
-                recommendList.innerHTML = `<div class="recommend-empty">无法生成推荐，请稍后重试</div>`;
-                recommendBadge.textContent = '0 个';
-                return;
-            }
-
-            // 更新badge
-            recommendBadge.textContent = `${recs.length} 个${chaotic ? ' 🔀 走势混乱' : ''}`;
-
-            // 渲染每个推荐
-            let html = '';
-            for (let i = 0; i < recs.length; i++) {
-                const r = recs[i];
-                const comb = r.combination;
-                const combCls = getCombinationClass(comb);
-                const label = r.isPrimary ? '⭐ 推荐一' : r.label;
-                const copyText = comb; // 单个复制只复制组合
-
-                html += `
-                    <div class="recommend-item" data-combination="${comb}">
-                        <div class="label">${label}</div>
-                        <div class="result">
-                            <span class="result-tag ${combCls}">${comb}</span>
-                            <span style="font-size:13px;color:#5a6a7a;font-weight:400;">${r.sum}</span>
-                        </div>
-                        <div class="actions">
-                            <button class="btn-copy btn-copy-single" data-text="${copyText}" title="复制此推荐">
-                                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                复制
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-
-            recommendList.innerHTML = html;
-
-            // 绑定单个复制事件
-            document.querySelectorAll('.btn-copy-single').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const text = this.dataset.text || '';
-                    copyToClipboard(text, `已复制: ${text}`);
-                    this.classList.add('copied');
-                    setTimeout(() => this.classList.remove('copied'), 1500);
-                });
-            });
-
-            // 绑定全部复制
-            const allBtn = document.getElementById('btnCopyAll');
-            if (allBtn) {
-                allBtn.onclick = function() {
-                    const items = document.querySelectorAll('.recommend-item');
-                    const texts = [];
-                    items.forEach(el => {
-                        const comb = el.dataset.combination || '';
-                        if (comb) texts.push(comb);
-                    });
-                    if (texts.length === 0) {
-                        showToast('没有可复制的内容', 1200);
-                        return;
-                    }
-                    const content = texts.join('\n');
-                    copyToClipboard(content, `已复制 ${texts.length} 个推荐`);
+                counter++;
+                if(counter > 110) break;
+                let nameDouble = `双组法${counter}`;
+                algos['double_'+counter] = {
+                    name: nameDouble,
+                    type: 'double',
+                    calc: (function(fn, abs, div, coeff){
+                        return function(data){
+                            let L=data[0].sum;
+                            let v = fn(L+1);
+                            if(abs) v = Math.abs(v);
+                            let intPart = Math.floor(v * coeff) % div;
+                            return {type:'double', result: DOUBLE_MAP[intPart % 4] || ['小单','大双']};
+                        };
+                    })(f.fn, f.abs, div, coeff)
                 };
+                counter++;
             }
+            if(counter > 110) break;
         }
+        if(counter > 110) break;
+    }
 
-        // ============================================================
-        //  复制功能
-        // ============================================================
-        function copyToClipboard(text, toastMsg) {
-            if (!text) {
-                showToast('内容为空', 1000);
-                return;
+    // 球位置算法
+    const posMap = {A:0, B:1, C:2};
+    for(let p of ['A','B','C']){
+        for(let div of [3,4,5,6,7,8,9,10]){
+            for(let coeff of [0.5,0.618,0.7,1.0,1.5]){
+                if(counter > 120) break;
+                let idx = posMap[p];
+                let nameKill = `球杀法${counter}`;
+                algos['kill_'+counter] = {
+                    name: nameKill,
+                    type: 'kill',
+                    calc: (function(idx, div, coeff){
+                        return function(data){
+                            let b = data[0].balls[idx];
+                            let intPart = Math.floor(b * coeff) % div;
+                            let k = {0:'小单',1:'小双',2:'大单',3:'大双'}[intPart % 4] || '小单';
+                            return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)};
+                        };
+                    })(idx, div, coeff)
+                };
+                counter++;
+                if(counter > 120) break;
+                let nameDouble = `球双法${counter}`;
+                algos['double_'+counter] = {
+                    name: nameDouble,
+                    type: 'double',
+                    calc: (function(idx, div, coeff){
+                        return function(data){
+                            let b = data[0].balls[idx];
+                            let intPart = Math.floor(b * coeff) % div;
+                            return {type:'double', result: DOUBLE_MAP[intPart % 4] || ['小单','大双']};
+                        };
+                    })(idx, div, coeff)
+                };
+                counter++;
             }
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast(toastMsg || '已复制');
-                }).catch(() => {
-                    fallbackCopy(text, toastMsg);
-                });
-            } else {
-                fallbackCopy(text, toastMsg);
-            }
+            if(counter > 120) break;
         }
+        if(counter > 120) break;
+    }
 
-        function fallbackCopy(text, toastMsg) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.left = '-9999px';
-            textarea.style.top = '-9999px';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                showToast(toastMsg || '已复制');
-            } catch (err) {
-                showToast('复制失败，请手动复制', 1500);
-            }
-            document.body.removeChild(textarea);
-        }
-
-        // ============================================================
-        //  主流程
-        // ============================================================
-        async function loadData(showLoading = true) {
-            if (isRefreshing) return;
-            isRefreshing = true;
-
-            if (showLoading) {
-                historyBody.innerHTML = `<tr><td colspan="7" class="loading-text">加载中...</td></tr>`;
-                recommendList.innerHTML = `<div class="recommend-empty">加载数据中...</div>`;
-            }
-
-            try {
-                const raw = await fetchData();
-                const parsed = parseApiData(raw);
-
-                if (!parsed || parsed.length === 0) {
-                    throw new Error('解析后无有效数据');
-                }
-
-                // 按期号降序排序（最新在前）
-                parsed.sort((a, b) => parseIssueNum(b.issue) - parseIssueNum(a.issue));
-
-                allData = parsed;
-                latestItem = allData.length > 0 ? allData[0] : null;
-
-                // 更新UI
-                renderLatest(latestItem);
-                renderHistory(allData);
-                renderRecommendations(allData);
-
-                statusData.textContent = `数据来源：${allData.length} 期`;
-                statusTime.textContent = `更新：${getNowStr()}`;
-                headerTime.textContent = getNowStr();
-
-            } catch (err) {
-                console.error('加载失败', err);
-                historyBody.innerHTML = `<tr><td colspan="7" class="error-text">❌ ${err.message || '加载失败，请重试'}</td></tr>`;
-                recommendList.innerHTML = `<div class="recommend-empty">⚠️ 数据加载失败，请点击刷新重试</div>`;
-                statusData.textContent = '数据来源：加载失败';
-                statusTime.textContent = `更新：${getNowStr()}`;
-                showToast('数据加载失败: ' + (err.message || '未知错误'), 2500);
-            } finally {
-                isRefreshing = false;
-            }
-        }
-
-        // ============================================================
-        //  启动 & 事件绑定
-        // ============================================================
-
-        // 刷新按钮
-        document.getElementById('btnRefresh').addEventListener('click', function() {
-            this.textContent = '刷新中...';
-            this.disabled = true;
-            loadData(true).finally(() => {
-                this.textContent = '刷新';
-                this.disabled = false;
-            });
-        });
-
-        // 初始加载
-        loadData(true);
-
-        // 更新时间显示
-        setInterval(() => {
-            headerTime.textContent = getNowStr();
-        }, 30000);
-
-        console.log('🚀 PC28 智能预测已启动');
-        console.log('📊 算法: 用户自定义提取 + 加法预测 (大小判定 >=14 为大)');
-        console.log('📞 客服: @ero6v');
-
-        // 暴露一些变量便于调试
-        window.__app = {
-            allData,
-            latestItem,
-            loadData,
-            predictWithAlgorithm,
-            getRecommendations,
-            isTrendChaotic,
-            CONFIG,
+    // 尾数算法
+    for(let div of [3,4,5,6,7,8,9,10]){
+        if(counter > 120) break;
+        let nameKill = `尾杀法${counter}`;
+        algos['kill_'+counter] = {
+            name: nameKill,
+            type: 'kill',
+            calc: (function(div){
+                return function(data){
+                    let L = data[0].sum;
+                    let intPart = (L % 10) % div;
+                    let k = {0:'小单',1:'小双',2:'大单',3:'大双'}[intPart % 4] || '小单';
+                    return {type:'kill', kill:k, recommend: ALL_COMBOS.filter(c=>c!==k)};
+                };
+            })(div)
         };
-    </script>
+        counter++;
+        if(counter > 120) break;
+        let nameDouble = `尾双法${counter}`;
+        algos['double_'+counter] = {
+            name: nameDouble,
+            type: 'double',
+            calc: (function(div){
+                return function(data){
+                    let L = data[0].sum;
+                    let intPart = (L % 10) % div;
+                    return {type:'double', result: DOUBLE_MAP[intPart % 4] || ['小单','大双']};
+                };
+            })(div)
+        };
+        counter++;
+    }
 
+    console.log('✅ 总算法数:', Object.keys(algos).length);
+    return algos;
+}
+
+const ALGOS = buildAlgorithms();
+const ALGO_KEYS = Object.keys(ALGOS);
+
+// ---------- 状态 ----------
+let dataList = [];
+let history = [];
+let lastResult = null;
+let lastPeriod = null;
+let autoTimer = 30;
+let autoInterval = null;
+
+// ---------- 数据获取 ----------
+async function fetchData(){
+    try{
+        let resp = await fetch(API_URL);
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        let raw = await resp.json();
+        return raw;
+    }catch(e){ console.warn('API请求失败:', e.message); return null; }
+}
+
+function parseData(raw){
+    if(!raw) return null;
+    let items = [];
+    if(raw.data && Array.isArray(raw.data)){
+        for(let item of raw.data){
+            let numStr = item.number || '';
+            if(numStr){
+                let balls = numStr.split('+').map(Number);
+                if(balls.length===3){
+                    items.push({
+                        period: item.nbr || '未知',
+                        balls: balls,
+                        sum: parseInt(item.num) || balls.reduce((a,b)=>a+b,0),
+                        combo: item.combination || getCombo(balls.reduce((a,b)=>a+b,0))
+                    });
+                }
+            }
+        }
+    }
+    if(items.length===0) return null;
+    items.sort((a,b)=>parseInt(b.period)-parseInt(a.period));
+    return items;
+}
+
+// ---------- 手动计算 ----------
+function manualCalculate(){
+    let n1=parseInt($('m1').value)||0, n2=parseInt($('m2').value)||0, n3=parseInt($('m3').value)||0;
+    let m1=parseInt($('m4').value)||0, m2=parseInt($('m5').value)||0, m3=parseInt($('m6').value)||0;
+    let data = [
+        { balls:[n1,n2,n3], sum:n1+n2+n3, combo:getCombo(n1+n2+n3) },
+        { balls:[m1,m2,m3], sum:m1+m2+m3, combo:getCombo(m1+m2+m3) }
+    ];
+    dataList = data;
+    renderLatest(data[0]);
+    let algoKey = $('algoSelect').value;
+    let algo = ALGOS[algoKey];
+    if(!algo){ showToast('算法未找到'); return; }
+    let result = algo.calc(data);
+    lastResult = result;
+    renderRecommendation(result, algoKey);
+    let period = '手动';
+    let prevActual = data[1]?.combo;
+    if(prevActual){
+        let isHit = false;
+        if(result.kill){ isHit = result.kill !== prevActual; }
+        else { isHit = result.result.includes(prevActual); }
+        addHistory(period, result, prevActual, isHit);
+    }
+    $('hitStatus').textContent = '✅ 手动计算完成';
+}
+
+// ---------- 渲染 ----------
+function renderLatest(item){
+    if(!item){
+        $('latestPeriod').textContent='--';
+        $('latestBalls').innerHTML='<span class="ball ball-0">-</span><span class="ball ball-0">-</span><span class="ball ball-0">-</span>';
+        $('latestSum').textContent='--';
+        $('latestTags').innerHTML='<span class="tag tag-small">小</span><span class="tag tag-even">双</span>';
+        return;
+    }
+    $('latestPeriod').textContent=item.period;
+    $('latestBalls').innerHTML=item.balls.map((v,i)=>`<span class="ball ${getBallColor(v)}">${v}</span>`).join('');
+    $('latestSum').textContent=item.sum;
+    let size=item.sum>=14?'大':'小', parity=item.sum%2===0?'双':'单';
+    $('latestTags').innerHTML=`<span class="tag ${size==='大'?'tag-big':'tag-small'}">${size}</span><span class="tag ${parity==='单'?'tag-odd':'tag-even'}">${parity}</span>`;
+}
+
+function renderRecommendation(result, algoKey){
+    let algo = ALGOS[algoKey];
+    if(!result){$('resultMain').textContent='等待数据...';$('resultSub').textContent='';return;}
+    $('resultAlgo').textContent = algo.name;
+    if(result.type==='kill'){
+        $('resultMain').innerHTML = `🔴 杀：<span class="kill">${result.kill}</span>`;
+        $('resultSub').innerHTML = `✅ 买：<span class="buy">${result.recommend.join('、')}</span>`;
+    } else {
+        $('resultMain').innerHTML = `🟢 推荐：<span class="buy">${result.result.join(' + ')}</span>`;
+        $('resultSub').innerHTML = `📌 杀：${ALL_COMBOS.filter(c=>!result.result.includes(c)).join('、')}`;
+    }
+}
+
+function updateStats(){
+    $('statTotal').textContent = history.length;
+    let hitCount = history.filter(h=>h.hit).length;
+    $('statHit').textContent = hitCount;
+    $('statRate').textContent = history.length ? Math.round(hitCount/history.length*100)+'%' : '0%';
+    let streak=0;
+    for(let i=history.length-1; i>=0; i--){ if(history[i].hit) streak++; else break; }
+    $('statStreak').textContent = streak;
+    renderHistory();
+}
+
+function renderHistory(){
+    let tbody = $('historyBody');
+    if(!history.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px 0;">暂无</td></tr>';return;}
+    let html='';
+    let show = history.slice(-20).reverse();
+    for(let h of show){
+        let status = h.hit ? '<span class="status-badge hit">🀄️</span>' : '<span class="status-badge miss">🍉</span>';
+        let detail = h.kill ? `杀${h.kill}` : h.result.join('+');
+        html+=`<tr><td>${h.period||'--'}</td><td>${detail}</td><td>${h.actual||'--'}</td><td>${status}</td></tr>`;
+    }
+    tbody.innerHTML=html;
+}
+
+function addHistory(period, result, actual, hit){
+    history.push({period, result: result.result || [result.kill], kill: result.kill, actual, hit});
+    if(history.length>200) history.shift();
+    updateStats();
+    $('hitStatus').textContent = hit ? '🀄️' : '🍉';
+}
+
+// ---------- 主刷新 ----------
+async function refreshData(){
+    $('dataStatus').textContent = '⏳ 加载...';
+    $('resultMain').textContent = '加载中...';
+    let raw = await fetchData();
+    if(!raw){
+        $('dataStatus').textContent = '⚠️ API失败，手动输入';
+        $('manualPanel').style.display = 'block';
+        if(!dataList || dataList.length<2){
+            $('resultMain').textContent = '请手动输入号码';
+            $('resultSub').textContent = '点击「计算」';
+        }
+        return;
+    }
+    $('manualPanel').style.display = 'none';
+    let parsed = parseData(raw);
+    if(!parsed || parsed.length<2){
+        $('dataStatus').textContent = '⚠️ 数据不足';
+        return;
+    }
+    dataList = parsed;
+    $('dataStatus').textContent = `✅ ${dataList.length}期`;
+    renderLatest(dataList[0]);
+    updateCountdown();
+    let algoKey = $('algoSelect').value;
+    let algo = ALGOS[algoKey];
+    if(!algo){ showToast('算法未找到'); return; }
+    let result = algo.calc(dataList);
+    lastResult = result;
+    renderRecommendation(result, algoKey);
+    if(history.length>0 && lastPeriod){
+        let last = history[history.length-1];
+        let prevActual = dataList[1]?.combo;
+        if(prevActual && last.period === dataList[1]?.period){
+            let isHit = false;
+            if(last.kill){ isHit = last.kill !== prevActual; }
+            else { isHit = last.result.includes(prevActual); }
+            if(!last.hitChecked){ last.hit=isHit; last.hitChecked=true; addHistory(last.period, last, prevActual, isHit); }
+        }
+    }
+    lastPeriod = dataList[0].period;
+    autoTimer = 30;
+}
+
+// ---------- 倒计时 ----------
+function updateCountdown(){
+    let now = new Date();
+    let next = new Date(now);
+    next.setMinutes(next.getMinutes() + 3);
+    next.setSeconds(0);
+    let diff = Math.floor((next-now)/1000);
+    if(diff<0) diff=0;
+    let mins = String(Math.floor(diff/60)).padStart(2,'0');
+    let secs = String(diff%60).padStart(2,'0');
+    $('countdownTimer').textContent = mins+':'+secs;
+    $('countdownNext').textContent = next.toLocaleTimeString();
+    let total = 180;
+    let pct = ((total-diff)/total*100);
+    $('progressFill').style.width = Math.min(100,pct)+'%';
+    setTimeout(updateCountdown, 1000);
+}
+
+// ---------- 自动刷新 ----------
+function startAuto(){
+    if(autoInterval) clearInterval(autoInterval);
+    autoTimer=30;
+    $('autoStatus').textContent = '▶️ 30s';
+    autoInterval = setInterval(()=>{
+        autoTimer--;
+        $('autoStatus').textContent = '▶️ '+autoTimer+'s';
+        if(autoTimer<=0){ autoTimer=30; if(!document.hidden) refreshData(); }
+    }, 1000);
+}
+
+function toggleAuto(){
+    if(autoInterval){ clearInterval(autoInterval); autoInterval=null; $('autoStatus').textContent='⏸️ 暂停'; }
+    else { startAuto(); }
+}
+
+function changeAlgo(){
+    let algoKey = $('algoSelect').value;
+    let algo = ALGOS[algoKey];
+    if(!algo) return;
+    if(dataList && dataList.length>=2){
+        let result = algo.calc(dataList);
+        lastResult = result;
+        renderRecommendation(result, algoKey);
+    }
+}
+
+// ---------- 初始化下拉 ----------
+function initSelect(){
+    let select = $('algoSelect');
+    select.innerHTML = '';
+    let coreKeys = ['log10_kill','sin_kill','cos_kill','tan_kill','sqrt_kill','cross_double','sin_double','mod7_double','trend5_double','opposite_double'];
+    let otherKeys = ALGO_KEYS.filter(k=>!coreKeys.includes(k));
+    let sorted = coreKeys.concat(otherKeys.sort());
+    for(let key of sorted){
+        let opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = ALGOS[key].name;
+        select.appendChild(opt);
+    }
+    $('algoCount').textContent = `(${sorted.length}个算法)`;
+}
+
+// ---------- 事件 ----------
+function bindEvents(){
+    $('themeToggle').addEventListener('click', ()=>{
+        let theme = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+        document.documentElement.setAttribute('data-theme',theme);
+        localStorage.setItem('pc28_theme',theme);
+        $('themeToggle').textContent=theme==='dark'?'🌓':'☀️';
+    });
+    $('algoSelect').addEventListener('change', changeAlgo);
+    $('refreshBtn').addEventListener('click', refreshData);
+    $('copyResultBtn').addEventListener('click', ()=>{
+        let main = $('resultMain').textContent;
+        let sub = $('resultSub').textContent;
+        let text = main + ' ' + sub;
+        if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>showToast('已复制')); }
+        else{ showToast('复制失败'); }
+    });
+    $('clearHistoryBtn').addEventListener('click', ()=>{ if(confirm('清空所有记录？')){ history=[]; updateStats(); showToast('已清空'); } });
+    $('manualCalcBtn').addEventListener('click', manualCalculate);
+    $('autoStatus').addEventListener('click', toggleAuto);
+}
+
+// ---------- 启动 ----------
+function init(){
+    let theme = localStorage.getItem('pc28_theme')||'dark';
+    document.documentElement.setAttribute('data-theme',theme);
+    $('themeToggle').textContent=theme==='dark'?'🌓':'☀️';
+    $('headerTime').textContent = new Date().toLocaleTimeString();
+    initBg();
+    initSelect();
+    bindEvents();
+    refreshData();
+    startAuto();
+    setInterval(()=>$('headerTime').textContent=new Date().toLocaleTimeString(),30000);
+    console.log('🚀 PC28 算法库已启动');
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
